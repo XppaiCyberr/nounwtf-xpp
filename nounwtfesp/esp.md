@@ -5,14 +5,14 @@ This guide explains how to prepare, wire, program, and test the ESP8266 + MAX721
 There are two sketches:
 
 - [`esp8266.ino`](./esp8266.ino): direct sketch with WiFi values edited in code.
-- [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino): universal firmware with a WiFi setup page on the ESP8266.
+- [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino): universal grant firmware with a WiFi setup page on the ESP8266.
 
-For GitHub/web-installer firmware, use [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino).
+For GitHub/web-installer firmware, use [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino).
 
 The easiest way to flash the ESP8266 is to use the ready-made firmware file:
 
 ```text
-nounwtfsetup/nounwtfgrant.bin
+nounwtfgrant/nounwtfgrant.bin
 ```
 
 You do not need Arduino IDE for the `.bin` flashing method.
@@ -52,7 +52,7 @@ Example output:
 - Windows computer with Chrome, Edge, or Opera
 - 5V power source or power bank
 - Bundled CH34x Windows driver ZIP: [`CH34x_Install_Windows_v3_4.zip`](./CH34x_Install_Windows_v3_4.zip)
-- Ready-made firmware: [`nounwtfsetup/nounwtfgrant.bin`](./nounwtfsetup/nounwtfgrant.bin)
+- Ready-made firmware: [`nounwtfgrant/nounwtfgrant.bin`](./nounwtfgrant/nounwtfgrant.bin)
 
 Use a real USB data cable. Many charging cables power the board but do not expose the serial port.
 
@@ -149,7 +149,7 @@ Use a desktop browser that supports Web Serial, such as Chrome, Edge, or Opera.
 5. Select or upload this firmware file:
 
    ```text
-   nounwtfsetup/nounwtfgrant.bin
+   nounwtfgrant/nounwtfgrant.bin
    ```
 
 6. If the flasher asks for an address, use:
@@ -274,7 +274,7 @@ const char WIFI_PASSWORD[] = "xxx";
 
 Use your real WiFi name and password before uploading.
 
-If using [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino), do not hardcode WiFi credentials. The ESP8266 opens a setup access point named `NOUNWTF-SETUP` when no saved WiFi is available.
+If using [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino), do not hardcode WiFi credentials. The ESP8266 opens a setup access point named `NOUNWTF-SETUP` when no saved WiFi is available.
 
 The API endpoint is:
 
@@ -314,7 +314,7 @@ Do not publish the sketch publicly while it contains a real WiFi password.
 ## 12. Upload From Arduino IDE
 
 1. Connect the ESP8266 to USB.
-2. Open either [`esp8266.ino`](./esp8266.ino) or [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino) in Arduino IDE.
+2. Open either [`esp8266.ino`](./esp8266.ino) or [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino) in Arduino IDE.
 3. Select the board from `Tools > Board`.
 4. Select the port from `Tools > Port`.
 5. Use these common upload settings:
@@ -337,7 +337,7 @@ If upload fails, close Serial Monitor and try again.
 
 Expected boot flow:
 
-1. With `nounwtfsetup.ino`, first boot opens the `NOUNWTF-SETUP` WiFi access point if no saved WiFi is available.
+1. With `nounwtfgrant.ino`, first boot opens the `NOUNWTF-SETUP` WiFi access point if no saved WiFi is available.
 2. Connect to `NOUNWTF-SETUP` and open `http://192.168.4.1`.
 3. Save your 2.4GHz WiFi SSID and password.
 4. The ESP8266 restarts.
@@ -505,7 +505,7 @@ Display shows `API parse failed`:
 ## 18. Reference Links
 
 - Bundled CH34x Windows driver: [`CH34x_Install_Windows_v3_4.zip`](./CH34x_Install_Windows_v3_4.zip)
-- Ready-made firmware: [`nounwtfsetup/nounwtfgrant.bin`](./nounwtfsetup/nounwtfgrant.bin)
+- Ready-made firmware: [`nounwtfgrant/nounwtfgrant.bin`](./nounwtfgrant/nounwtfgrant.bin)
 - Spacehuhn browser flasher: https://esptool.spacehuhn.com/
 - Spacehuhn browser flashing guide: https://docs.spacehuhn.com/blog/espwebtool/
 - ESP8266 Arduino core: https://github.com/esp8266/Arduino
