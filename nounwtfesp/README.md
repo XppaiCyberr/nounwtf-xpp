@@ -7,6 +7,8 @@ There are two sketches:
 - [`esp8266.ino`](./esp8266.ino): direct sketch with WiFi values edited in code.
 - [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino): universal grant firmware with a WiFi setup page on the ESP8266.
 
+This folder also includes [`max7219-animator/index.html`](./max7219-animator/index.html), a 32x8 MAX7219 animation editor for the WiFi connecting screen.
+
 For GitHub/web-installer firmware, use [`nounwtfgrant/nounwtfgrant.ino`](./nounwtfgrant/nounwtfgrant.ino).
 
 The easiest way to flash the ESP8266 is to use the ready-made firmware file:
@@ -33,7 +35,7 @@ Use that local driver ZIP when setting up the ESP8266 from this repository.
 
 The sketch does this:
 
-1. Shows `noun.wtf` one character at a time while connecting to WiFi.
+1. Plays the custom MAX7219 WiFi animation while connecting to WiFi.
 2. Fetches grant data from `https://nounv2api.vercel.app/api/grant`.
 3. Scrolls the grant ID, title, and proposer on the MAX7219 display.
 
@@ -341,7 +343,7 @@ Expected boot flow:
 2. Connect to `NOUNWTF-SETUP` and open `http://192.168.4.1`.
 3. Save your 2.4GHz WiFi SSID and password.
 4. The ESP8266 restarts.
-5. While connecting to WiFi, the display shows `noun.wtf` one character at a time.
+5. While connecting to WiFi, the display plays the custom MAX7219 animation from [`nounwtfgrant/wifi_animation.h`](./nounwtfgrant/wifi_animation.h).
 6. After WiFi connects, it briefly displays `WiFi connected`.
 7. Then it displays `Loading grants...`.
 8. The ESP8266 fetches the grant API.
@@ -363,7 +365,34 @@ You can temporarily override the display text from Serial Monitor:
 
 The matrix scrolls your typed message. The next API refresh replaces it with the latest grant data.
 
-## 15. Useful Sketch Settings
+## 15. Custom WiFi Animation
+
+Open the MAX7219 animation editor directly in your browser:
+
+```text
+nounwtfesp\max7219-animator\index.html
+```
+
+The editor is set up for this project:
+
+- 32 columns x 8 rows
+- Four chained MAX7219 8x8 modules
+- ESP8266 grant firmware
+- Export format for [`nounwtfgrant/wifi_animation.h`](./nounwtfgrant/wifi_animation.h)
+
+To use a custom animation:
+
+1. Open [`max7219-animator/index.html`](./max7219-animator/index.html).
+2. Draw or edit the 32x8 frames.
+3. Click `Play` to preview the animation.
+4. Click `Copy Header` or `Download`.
+5. Replace the contents of [`nounwtfgrant/wifi_animation.h`](./nounwtfgrant/wifi_animation.h) with the exported header.
+6. Rebuild or export the `.bin` firmware again.
+7. Flash the updated firmware to the ESP8266.
+
+The ESP8266 uses this animation only while connecting to saved WiFi. After WiFi connects, the normal grant display starts.
+
+## 16. Useful Sketch Settings
 
 Brightness:
 
@@ -387,10 +416,10 @@ Pause after each scroll:
 const uint16_t SCROLL_PAUSE_MS = 1000;
 ```
 
-Startup letter speed:
+WiFi animation frame speed in [`nounwtfgrant/wifi_animation.h`](./nounwtfgrant/wifi_animation.h):
 
 ```cpp
-const unsigned long STARTUP_LETTER_INTERVAL_MS = 350;
+const uint16_t WIFI_ANIMATION_FRAME_DELAY_MS = 180;
 ```
 
 API refresh interval:
@@ -405,7 +434,7 @@ API retry interval:
 const unsigned long API_RETRY_INTERVAL_MS = 30000;
 ```
 
-## 16. If The Text Looks Wrong
+## 17. If The Text Looks Wrong
 
 Most MAX7219 matrix modules use `FC16_HW`, which is selected in the sketch:
 
@@ -423,7 +452,7 @@ If text is mirrored, upside down, shifted, or scrambled, try one of these:
 
 Only leave one `HARDWARE_TYPE` line enabled at a time.
 
-## 17. Troubleshooting
+## 18. Troubleshooting
 
 Board does not appear in Arduino IDE:
 
@@ -502,10 +531,11 @@ Display shows `API parse failed`:
 - Open Serial Monitor and read the printed API response.
 - The sketch expects `id`, `title`, and `proposer` string fields.
 
-## 18. Reference Links
+## 19. Reference Links
 
 - Bundled CH34x Windows driver: [`CH34x_Install_Windows_v3_4.zip`](./CH34x_Install_Windows_v3_4.zip)
 - Ready-made firmware: [`nounwtfgrant/nounwtfgrant.bin`](./nounwtfgrant/nounwtfgrant.bin)
+- MAX7219 animation editor: [`max7219-animator/index.html`](./max7219-animator/index.html)
 - Spacehuhn browser flasher: https://esptool.spacehuhn.com/
 - Spacehuhn browser flashing guide: https://docs.spacehuhn.com/blog/espwebtool/
 - ESP8266 Arduino core: https://github.com/esp8266/Arduino

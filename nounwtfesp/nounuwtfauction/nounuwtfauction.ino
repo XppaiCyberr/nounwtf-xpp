@@ -785,11 +785,11 @@ bool buildAuctionMessages(const String &payload) {
   clearAuctionMessages();
 
   if (settled) {
-    snprintf(rawMessage, sizeof(rawMessage), "NOUN #%s | SETTLED", nounId);
+    snprintf(rawMessage, sizeof(rawMessage), "NOUNV2 #%s | SETTLED", nounId);
   } else if (strcmp(amountETH, "0") == 0 || strcmp(amountETH, "0.0") == 0 || strcmp(bidder, "no bidder") == 0) {
-    snprintf(rawMessage, sizeof(rawMessage), "NOUN #%s | NO BID", nounId);
+    snprintf(rawMessage, sizeof(rawMessage), "NOUNV2 #%s | NO BID", nounId);
   } else {
-    snprintf(rawMessage, sizeof(rawMessage), "NOUN #%s | %s ETH", nounId, amountETH);
+    snprintf(rawMessage, sizeof(rawMessage), "NOUNV2 #%s | %s ETH", nounId, amountETH);
   }
   rawMessage[sizeof(rawMessage) - 1] = '\0';
   addAuctionMessage(rawMessage);

@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NOUN.WTF MAX7219 Animator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3efe6;
+      --ink: #171923;
+      --muted: #667085;
+      --line: #cfd6dd;
+      --panel: #ffffff;
+      --led-off: #1f2933;
+      --led-on: #40d982;
+      --accent: #e85d75;
+      --accent-2: #f0b429;
+      --focus: #2563eb;
+      --shadow: 0 12px 32px rgba(23, 25, 35, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      cursor: pointer;
+      min-height: 36px;
+      padding: 8px 11px;
+    }
+
+    button:hover {
+      border-color: #9aa6b2;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible {
+      outline: 3px solid rgba(37, 99, 235, 0.24);
+      outline-offset: 2px;
+      border-color: var(--focus);
+    }
+
+    button.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #ffffff;
+    }
+
+    button.danger {
+      border-color: #f0a1ad;
+      color: #a61b34;
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #ffffff;
+      color: var(--ink);
+      padding: 9px 10px;
+    }
+
+    textarea {
+      min-height: 260px;
+      resize: vertical;
+      font-family: "Cascadia Mono", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      tab-size: 2;
+    }
+
+    .app-bar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px clamp(16px, 4vw, 40px) 14px;
+      border-bottom: 1px solid rgba(23, 25, 35, 0.12);
+      background: rgba(255, 255, 255, 0.7);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .status {
+      min-width: 180px;
+      max-width: 360px;
+      color: #344054;
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      gap: 18px;
+      padding: 18px clamp(16px, 4vw, 40px) 32px;
+    }
+
+    .workspace,
+    .side-panel {
+      background: var(--panel);
+      border: 1px solid rgba(23, 25, 35, 0.12);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .workspace {
+      min-width: 0;
+      padding: 16px;
+    }
+
+    .side-panel {
+      align-self: start;
+      display: grid;
+      gap: 16px;
+      padding: 16px;
+    }
+
+    .toolbar,
+    .control-row,
+    .frame-actions,
+    .playback {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar {
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .segmented {
+      display: inline-flex;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .segmented button {
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 0;
+      min-width: 68px;
+    }
+
+    .segmented button:last-child {
+      border-right: 0;
+    }
+
+    .matrix-scroll {
+      overflow-x: auto;
+      padding: 12px;
+      border: 1px solid #d7dde3;
+      border-radius: 8px;
+      background: #111827;
+    }
+
+    .matrix-grid {
+      --cell: 18px;
+      display: grid;
+      grid-template-columns: repeat(32, var(--cell));
+      grid-template-rows: repeat(8, var(--cell));
+      gap: 4px;
+      width: max-content;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .led-cell {
+      width: var(--cell);
+      height: var(--cell);
+      min-height: 0;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      background: var(--led-off);
+    }
+
+    .led-cell.on {
+      background: var(--led-on);
+      border-color: rgba(64, 217, 130, 0.8);
+      box-shadow: 0 0 10px rgba(64, 217, 130, 0.65);
+    }
+
+    .module-ruler {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      width: calc(32 * 18px + 31 * 4px);
+      max-width: 100%;
+      margin: 8px 0 0;
+      color: #475467;
+      font-size: 12px;
+    }
+
+    .module-ruler span {
+      border-top: 3px solid var(--accent-2);
+      padding-top: 4px;
+      text-align: center;
+    }
+
+    .preview-wrap {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #d7dde3;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .preview-grid {
+      --preview-cell: 9px;
+      display: grid;
+      grid-template-columns: repeat(32, var(--preview-cell));
+      grid-template-rows: repeat(8, var(--preview-cell));
+      gap: 2px;
+      width: max-content;
+      max-width: 100%;
+      overflow: hidden;
+      padding: 10px;
+      border-radius: 6px;
+      background: #111827;
+    }
+
+    .preview-led {
+      width: var(--preview-cell);
+      height: var(--preview-cell);
+      border-radius: 50%;
+      background: #293241;
+    }
+
+    .preview-led.on {
+      background: var(--led-on);
+      box-shadow: 0 0 8px rgba(64, 217, 130, 0.7);
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label,
+    .section-title {
+      color: #344054;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .range-field {
+      display: grid;
+      grid-template-columns: 1fr 70px;
+      gap: 8px;
+      align-items: center;
+      min-width: 250px;
+    }
+
+    .range-field input[type="range"] {
+      padding: 0;
+    }
+
+    .range-value {
+      color: #344054;
+      font-size: 13px;
+      text-align: right;
+    }
+
+    .frame-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+      gap: 8px;
+      max-height: 250px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .frame-tile {
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .frame-tile.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(232, 93, 117, 0.16);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(32, 2px);
+      grid-template-rows: repeat(8, 2px);
+      gap: 1px;
+      padding: 4px;
+      border-radius: 5px;
+      background: #111827;
+    }
+
+    .mini-led {
+      width: 2px;
+      height: 2px;
+      border-radius: 1px;
+      background: #293241;
+    }
+
+    .mini-led.on {
+      background: var(--led-on);
+    }
+
+    .transform-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .transform-grid button {
+      min-width: 0;
+      padding: 8px 6px;
+    }
+
+    .export-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .import-block {
+      display: grid;
+      gap: 8px;
+    }
+
+    .import-block textarea {
+      min-height: 110px;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        align-self: stretch;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-bar {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .status {
+        max-width: none;
+        min-width: 0;
+        text-align: left;
+      }
+
+      .toolbar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .segmented,
+      .control-row,
+      .frame-actions,
+      .playback {
+        width: 100%;
+      }
+
+      .segmented button,
+      .control-row button,
+      .frame-actions button {
+        flex: 1;
+      }
+
+      .range-field {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .preview-grid {
+        --preview-cell: 7px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="app-bar">
+    <div>
+      <h1>NOUN.WTF MAX7219 Animator</h1>
+      <p class="subtitle">32 x 8 frames for ESP8266 + four chained MAX7219 modules</p>
+    </div>
+    <div class="status" id="status">Ready</div>
+  </header>
+
+  <main class="layout">
+    <section class="workspace" aria-labelledby="editor-title">
+      <div class="toolbar">
+        <div>
+          <div class="section-title" id="editor-title">Frame Editor</div>
+          <div class="segmented" id="toolButtons" aria-label="Drawing tool">
+            <button type="button" data-tool="draw" class="active">Draw</button>
+            <button type="button" data-tool="erase">Erase</button>
+            <button type="button" data-tool="toggle">Toggle</button>
+          </div>
+        </div>
+        <div class="control-row">
+          <button type="button" id="clearFrame">Clear</button>
+          <button type="button" id="invertFrame">Invert</button>
+          <button type="button" id="mirrorFrame">Mirror</button>
+          <button type="button" id="loadDefault">NOUN.WTF</button>
+        </div>
+      </div>
+
+      <div class="matrix-scroll" aria-label="MAX7219 drawing grid">
+        <div class="matrix-grid" id="matrixGrid"></div>
+      </div>
+      <div class="module-ruler" aria-hidden="true">
+        <span>Module 1</span>
+        <span>Module 2</span>
+        <span>Module 3</span>
+        <span>Module 4</span>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="playback">
+          <button type="button" id="prevFrame">Prev</button>
+          <button type="button" id="playToggle" class="primary">Play</button>
+          <button type="button" id="nextFrame">Next</button>
+          <div class="range-field">
+            <input type="range" id="delayRange" min="80" max="800" step="20" value="180" aria-label="Frame delay">
+            <div class="range-value" id="delayValue">180 ms</div>
+          </div>
+        </div>
+        <div class="preview-grid" id="previewGrid" aria-label="Animation preview"></div>
+      </div>
+    </section>
+
+    <aside class="side-panel" aria-label="Animation controls">
+      <div class="field">
+        <div class="section-title">Frames</div>
+        <div class="frame-actions">
+          <button type="button" id="addFrame">+</button>
+          <button type="button" id="duplicateFrame">Duplicate</button>
+          <button type="button" id="deleteFrame" class="danger">Delete</button>
+        </div>
+        <div class="frame-strip" id="frameStrip"></div>
+      </div>
+
+      <div class="field">
+        <label for="stampText">Text Stamp</label>
+        <div class="control-row">
+          <input type="text" id="stampText" value="NOUN.WTF" maxlength="12" aria-label="Text to stamp">
+          <button type="button" id="stampButton">Stamp</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="section-title">Move</div>
+        <div class="transform-grid">
+          <button type="button" data-shift="-1,0">L</button>
+          <button type="button" data-shift="1,0">R</button>
+          <button type="button" data-shift="0,-1">U</button>
+          <button type="button" data-shift="0,1">D</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="section-title">Export</div>
+        <div class="export-actions">
+          <button type="button" id="copyCode">Copy Header</button>
+          <button type="button" id="downloadCode">Download</button>
+        </div>
+        <textarea id="exportCode" spellcheck="false" aria-label="Generated wifi_animation.h code"></textarea>
+      </div>
+
+      <div class="import-block">
+        <div class="section-title">Import</div>
+        <textarea id="importCode" spellcheck="false" aria-label="Header code to import"></textarea>
+        <button type="button" id="importButton">Import Header</button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    (() => {
+      const WIDTH = 32;
+      const HEIGHT = 8;
+      const STORAGE_KEY = "nounwtf.max7219.animator.v1";
+      const DEFAULT_DELAY = 180;
+      const FONT = {
+        "A": ["010", "101", "111", "101", "101"],
+        "B": ["110", "101", "110", "101", "110"],
+        "C": ["111", "100", "100", "100", "111"],
+        "D": ["110", "101", "101", "101", "110"],
+        "E": ["111", "100", "110", "100", "111"],
+        "F": ["111", "100", "110", "100", "100"],
+        "G": ["111", "100", "101", "101", "111"],
+        "H": ["101", "101", "111", "101", "101"],
+        "I": ["111", "010", "010", "010", "111"],
+        "J": ["001", "001", "001", "101", "111"],
+        "K": ["101", "101", "110", "101", "101"],
+        "L": ["100", "100", "100", "100", "111"],
+        "M": ["101", "111", "111", "101", "101"],
+        "N": ["101", "111", "111", "111", "101"],
+        "O": ["111", "101", "101", "101", "111"],
+        "P": ["111", "101", "111", "100", "100"],
+        "Q": ["111", "101", "101", "111", "001"],
+        "R": ["111", "101", "111", "110", "101"],
+        "S": ["111", "100", "111", "001", "111"],
+        "T": ["111", "010", "010", "010", "010"],
+        "U": ["101", "101", "101", "101", "111"],
+        "V": ["101", "101", "101", "101", "010"],
+        "W": ["101", "101", "101", "111", "101"],
+        "X": ["101", "101", "010", "101", "101"],
+        "Y": ["101", "101", "010", "010", "010"],
+        "Z": ["111", "001", "010", "100", "111"],
+        "0": ["111", "101", "101", "101", "111"],
+        "1": ["010", "110", "010", "010", "111"],
+        "2": ["111", "001", "111", "100", "111"],
+        "3": ["111", "001", "111", "001", "111"],
+        "4": ["101", "101", "111", "001", "001"],
+        "5": ["111", "100", "111", "001", "111"],
+        "6": ["111", "100", "111", "101", "111"],
+        "7": ["111", "001", "010", "010", "010"],
+        "8": ["111", "101", "111", "101", "111"],
+        "9": ["111", "101", "111", "001", "111"],
+        ".": ["0", "0", "0", "0", "1"],
+        "-": ["0", "0", "1", "0", "0"],
+        "/": ["001", "001", "010", "100", "100"],
+        ":": ["0", "1", "0", "1", "0"],
+        " ": ["0", "0", "0", "0", "0"]
+      };
+
+      const els = {
+        status: document.getElementById("status"),
+        matrixGrid: document.getElementById("matrixGrid"),
+        previewGrid: document.getElementById("previewGrid"),
+        frameStrip: document.getElementById("frameStrip"),
+        toolButtons: document.getElementById("toolButtons"),
+        delayRange: document.getElementById("delayRange"),
+        delayValue: document.getElementById("delayValue"),
+        exportCode: document.getElementById("exportCode"),
+        importCode: document.getElementById("importCode"),
+        stampText: document.getElementById("stampText"),
+        playToggle: document.getElementById("playToggle"),
+        prevFrame: document.getElementById("prevFrame"),
+        nextFrame: document.getElementById("nextFrame"),
+        addFrame: document.getElementById("addFrame"),
+        duplicateFrame: document.getElementById("duplicateFrame"),
+        deleteFrame: document.getElementById("deleteFrame"),
+        clearFrame: document.getElementById("clearFrame"),
+        invertFrame: document.getElementById("invertFrame"),
+        mirrorFrame: document.getElementById("mirrorFrame"),
+        loadDefault: document.getElementById("loadDefault"),
+        stampButton: document.getElementById("stampButton"),
+        copyCode: document.getElementById("copyCode"),
+        downloadCode: document.getElementById("downloadCode"),
+        importButton: document.getElementById("importButton")
+      };
+
+      let frames = createDefaultFrames();
+      let currentFrame = 0;
+      let tool = "draw";
+      let pointerDown = false;
+      let playTimer = null;
+      let delayMs = DEFAULT_DELAY;
+
+      function blankFrame() {
+        return Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(false));
+      }
+
+      function cloneFrame(frame) {
+        return frame.map((row) => row.slice());
+      }
+
+      function setStatus(message) {
+        els.status.textContent = message;
+      }
+
+      function textWidth(text) {
+        return Array.from(text).reduce((total, char, index) => {
+          const glyph = FONT[char] || FONT[" "];
+          return total + glyph[0].length + (index > 0 ? 1 : 0);
+        }, 0);
+      }
+
+      function drawText(frame, text, offsetX, offsetY) {
+        let x = offsetX;
+        for (const char of text) {
+          const glyph = FONT[char] || FONT[" "];
+          for (let y = 0; y < glyph.length; y++) {
+            for (let gx = 0; gx < glyph[y].length; gx++) {
+              if (glyph[y][gx] === "1") {
+                const px = x + gx;
+                const py = offsetY + y;
+                if (px >= 0 && px < WIDTH && py >= 0 && py < HEIGHT) {
+                  frame[py][px] = true;
+                }
+              }
+            }
+          }
+          x += glyph[0].length + 1;
+        }
+      }
+
+      function createDefaultFrames() {
+        const output = [];
+        const text = "NOUN.WTF";
+        const offsetX = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
+        const scannerStarts = [0, 4, 8, 12, 16, 20, 24, 28];
+
+        for (const start of scannerStarts) {
+          const frame = blankFrame();
+          drawText(frame, text, offsetX, 1);
+          for (let x = start; x < start + 4 && x < WIDTH; x++) {
+            frame[7][x] = true;
+          }
+          output.push(frame);
+        }
+
+        return output;
+      }
+
+      function saveState() {
+        const payload = {
+          frames,
+          currentFrame,
+          delayMs
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      }
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return;
+
+          const payload = JSON.parse(raw);
+          if (!Array.isArray(payload.frames) || payload.frames.length === 0) return;
+
+          frames = payload.frames.map((frame) => {
+            const next = blankFrame();
+            for (let y = 0; y < HEIGHT; y++) {
+              for (let x = 0; x < WIDTH; x++) {
+                next[y][x] = Boolean(frame[y] && frame[y][x]);
+              }
+            }
+            return next;
+          });
+
+          currentFrame = Math.min(Math.max(0, Number(payload.currentFrame) || 0), frames.length - 1);
+          delayMs = Number(payload.delayMs) || DEFAULT_DELAY;
+        } catch (error) {
+          setStatus("Saved animation ignored");
+        }
+      }
+
+      function renderMatrix() {
+        const frame = frames[currentFrame];
+        els.matrixGrid.replaceChildren();
+
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const cell = document.createElement("button");
+            cell.type = "button";
+            cell.className = "led-cell" + (frame[y][x] ? " on" : "");
+            cell.dataset.x = String(x);
+            cell.dataset.y = String(y);
+            cell.setAttribute("aria-label", `x ${x + 1}, y ${y + 1}`);
+            els.matrixGrid.appendChild(cell);
+          }
+        }
+      }
+
+      function renderPreview(frame = frames[currentFrame]) {
+        els.previewGrid.replaceChildren();
+
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const led = document.createElement("span");
+            led.className = "preview-led" + (frame[y][x] ? " on" : "");
+            els.previewGrid.appendChild(led);
+          }
+        }
+      }
+
+      function miniFrame(frame) {
+        const mini = document.createElement("div");
+        mini.className = "mini-grid";
+
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const led = document.createElement("span");
+            led.className = "mini-led" + (frame[y][x] ? " on" : "");
+            mini.appendChild(led);
+          }
+        }
+
+        return mini;
+      }
+
+      function renderFrameStrip() {
+        els.frameStrip.replaceChildren();
+
+        frames.forEach((frame, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "frame-tile" + (index === currentFrame ? " active" : "");
+          button.dataset.frame = String(index);
+          button.appendChild(miniFrame(frame));
+
+          const label = document.createElement("span");
+          label.textContent = `#${index + 1}`;
+          button.appendChild(label);
+          els.frameStrip.appendChild(button);
+        });
+
+        els.deleteFrame.disabled = frames.length <= 1;
+      }
+
+      function rowHex(frame, rowIndex) {
+        let value = 0n;
+        for (let x = 0; x < WIDTH; x++) {
+          value = (value << 1n) | BigInt(frame[rowIndex][x] ? 1 : 0);
+        }
+        return `0x${value.toString(16).toUpperCase().padStart(8, "0")}`;
+      }
+
+      function generateHeader() {
+        const lines = [
+          "#ifndef WIFI_ANIMATION_H",
+          "#define WIFI_ANIMATION_H",
+          "",
+          "#include <Arduino.h>",
+          "#include <pgmspace.h>",
+          "",
+          "const uint8_t WIFI_ANIMATION_WIDTH = 32;",
+          "const uint8_t WIFI_ANIMATION_HEIGHT = 8;",
+          `const uint8_t WIFI_ANIMATION_FRAME_COUNT = ${frames.length};`,
+          `const uint16_t WIFI_ANIMATION_FRAME_DELAY_MS = ${delayMs};`,
+          "",
+          "const uint32_t WIFI_ANIMATION_FRAMES[WIFI_ANIMATION_FRAME_COUNT][WIFI_ANIMATION_HEIGHT] PROGMEM = {"
+        ];
+
+        frames.forEach((frame) => {
+          lines.push("  {");
+          for (let y = 0; y < HEIGHT; y++) {
+            lines.push(`    UINT32_C(${rowHex(frame, y)}),`);
+          }
+          lines.push("  },");
+        });
+
+        lines.push("};", "", "#endif");
+        return lines.join("\n");
+      }
+
+      function renderExport() {
+        els.exportCode.value = generateHeader();
+      }
+
+      function renderAll(message) {
+        els.delayRange.value = String(delayMs);
+        els.delayValue.textContent = `${delayMs} ms`;
+        renderMatrix();
+        renderPreview();
+        renderFrameStrip();
+        renderExport();
+        saveState();
+        if (message) setStatus(message);
+      }
+
+      function applyTool(cell) {
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        const frame = frames[currentFrame];
+
+        if (tool === "draw") frame[y][x] = true;
+        if (tool === "erase") frame[y][x] = false;
+        if (tool === "toggle") frame[y][x] = !frame[y][x];
+
+        cell.classList.toggle("on", frame[y][x]);
+        renderPreview();
+        renderFrameStrip();
+        renderExport();
+        saveState();
+      }
+
+      function selectFrame(index) {
+        currentFrame = (index + frames.length) % frames.length;
+        renderAll(`Frame ${currentFrame + 1}`);
+      }
+
+      function addFrame() {
+        frames.splice(currentFrame + 1, 0, blankFrame());
+        currentFrame += 1;
+        renderAll("Frame added");
+      }
+
+      function duplicateFrame() {
+        frames.splice(currentFrame + 1, 0, cloneFrame(frames[currentFrame]));
+        currentFrame += 1;
+        renderAll("Frame duplicated");
+      }
+
+      function deleteFrame() {
+        if (frames.length <= 1) return;
+        frames.splice(currentFrame, 1);
+        currentFrame = Math.min(currentFrame, frames.length - 1);
+        renderAll("Frame deleted");
+      }
+
+      function shiftFrame(dx, dy) {
+        const source = frames[currentFrame];
+        const next = blankFrame();
+
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const nx = (x + dx + WIDTH) % WIDTH;
+            const ny = (y + dy + HEIGHT) % HEIGHT;
+            next[ny][nx] = source[y][x];
+          }
+        }
+
+        frames[currentFrame] = next;
+        renderAll("Frame moved");
+      }
+
+      function invertFrame() {
+        const frame = frames[currentFrame];
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            frame[y][x] = !frame[y][x];
+          }
+        }
+        renderAll("Frame inverted");
+      }
+
+      function clearFrame() {
+        frames[currentFrame] = blankFrame();
+        renderAll("Frame cleared");
+      }
+
+      function mirrorFrame() {
+        frames[currentFrame] = frames[currentFrame].map((row) => row.slice().reverse());
+        renderAll("Frame mirrored");
+      }
+
+      function stampText() {
+        const text = els.stampText.value.toUpperCase();
+        const frame = blankFrame();
+        const offsetX = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
+        drawText(frame, text, offsetX, 1);
+        frames[currentFrame] = frame;
+        renderAll("Text stamped");
+      }
+
+      function loadDefault() {
+        frames = createDefaultFrames();
+        currentFrame = 0;
+        delayMs = DEFAULT_DELAY;
+        stopPlayback();
+        renderAll("Default animation loaded");
+      }
+
+      function startPlayback() {
+        stopPlayback();
+        els.playToggle.textContent = "Stop";
+        let previewIndex = currentFrame;
+        playTimer = window.setInterval(() => {
+          renderPreview(frames[previewIndex]);
+          previewIndex = (previewIndex + 1) % frames.length;
+        }, delayMs);
+      }
+
+      function stopPlayback() {
+        if (playTimer) {
+          window.clearInterval(playTimer);
+          playTimer = null;
+        }
+        els.playToggle.textContent = "Play";
+        renderPreview();
+      }
+
+      async function copyHeader() {
+        const code = els.exportCode.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(code);
+        } else {
+          els.exportCode.select();
+          document.execCommand("copy");
+        }
+        setStatus("Header copied");
+      }
+
+      function downloadHeader() {
+        const blob = new Blob([els.exportCode.value], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "wifi_animation.h";
+        link.click();
+        URL.revokeObjectURL(url);
+        setStatus("Header downloaded");
+      }
+
+      function importHeader() {
+        const values = [];
+        const pattern = /UINT32_C\(\s*0x([0-9a-fA-F]{1,8})\s*\)/g;
+        let match;
+
+        while ((match = pattern.exec(els.importCode.value)) !== null) {
+          values.push(BigInt(`0x${match[1]}`));
+        }
+
+        if (values.length === 0 || values.length % HEIGHT !== 0) {
+          setStatus("Import needs complete 8-row frames");
+          return;
+        }
+
+        const imported = [];
+        for (let i = 0; i < values.length; i += HEIGHT) {
+          const frame = blankFrame();
+          for (let y = 0; y < HEIGHT; y++) {
+            const row = values[i + y];
+            for (let x = 0; x < WIDTH; x++) {
+              const bit = BigInt(WIDTH - 1 - x);
+              frame[y][x] = Boolean(row & (1n << bit));
+            }
+          }
+          imported.push(frame);
+        }
+
+        frames = imported;
+        currentFrame = 0;
+        stopPlayback();
+        renderAll(`${frames.length} frame import`);
+      }
+
+      function bindEvents() {
+        els.toolButtons.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-tool]");
+          if (!button) return;
+          tool = button.dataset.tool;
+          els.toolButtons.querySelectorAll("button").forEach((item) => {
+            item.classList.toggle("active", item === button);
+          });
+        });
+
+        els.matrixGrid.addEventListener("pointerdown", (event) => {
+          const cell = event.target.closest(".led-cell");
+          if (!cell) return;
+          pointerDown = true;
+          event.preventDefault();
+          applyTool(cell);
+        });
+
+        els.matrixGrid.addEventListener("pointerover", (event) => {
+          if (!pointerDown) return;
+          const cell = event.target.closest(".led-cell");
+          if (cell) applyTool(cell);
+        });
+
+        window.addEventListener("pointerup", () => {
+          pointerDown = false;
+        });
+
+        els.frameStrip.addEventListener("click", (event) => {
+          const button = event.target.closest("button[data-frame]");
+          if (button) selectFrame(Number(button.dataset.frame));
+        });
+
+        els.delayRange.addEventListener("input", () => {
+          delayMs = Number(els.delayRange.value);
+          els.delayValue.textContent = `${delayMs} ms`;
+          renderExport();
+          saveState();
+          if (playTimer) startPlayback();
+        });
+
+        els.playToggle.addEventListener("click", () => {
+          if (playTimer) {
+            stopPlayback();
+          } else {
+            startPlayback();
+          }
+        });
+
+        els.prevFrame.addEventListener("click", () => selectFrame(currentFrame - 1));
+        els.nextFrame.addEventListener("click", () => selectFrame(currentFrame + 1));
+        els.addFrame.addEventListener("click", addFrame);
+        els.duplicateFrame.addEventListener("click", duplicateFrame);
+        els.deleteFrame.addEventListener("click", deleteFrame);
+        els.clearFrame.addEventListener("click", clearFrame);
+        els.invertFrame.addEventListener("click", invertFrame);
+        els.mirrorFrame.addEventListener("click", mirrorFrame);
+        els.loadDefault.addEventListener("click", loadDefault);
+        els.stampButton.addEventListener("click", stampText);
+        els.copyCode.addEventListener("click", () => copyHeader().catch(() => setStatus("Copy failed")));
+        els.downloadCode.addEventListener("click", downloadHeader);
+        els.importButton.addEventListener("click", importHeader);
+
+        document.querySelectorAll("[data-shift]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const [dx, dy] = button.dataset.shift.split(",").map(Number);
+            shiftFrame(dx, dy);
+          });
+        });
+      }
+
+      loadState();
+      bindEvents();
+      renderAll("Ready");
+    })();
+  </script>
+</body>
+</html>

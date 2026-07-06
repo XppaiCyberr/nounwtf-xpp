@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "wifi_animation.h"
+
 #define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define MAX_DEVICES 4
 
@@ -36,9 +38,7 @@ const uint16_t SCROLL_PAUSE_MS = 1000;
 
 const char AP_SSID[] = "NOUNWTF-SETUP";
 const char GRANT_API_URL[] = "https://nounv2api.vercel.app/api/grant";
-const char STARTUP_TEXT[] = "noun.wtf";
 
-const unsigned long STARTUP_LETTER_INTERVAL_MS = 350;
 const unsigned long WIFI_CONNECT_TIMEOUT_MS = 20000;
 const unsigned long API_REFRESH_INTERVAL_MS = 300000; // 5 minutes.
 const unsigned long API_RETRY_INTERVAL_MS = 30000;    // 30 seconds after failure.
@@ -99,22 +99,43 @@ void displayStaticText(const char *text) {
   matrix.print(text);
 }
 
-void serviceStartupText() {
-  static uint8_t textIndex = 0;
-  static unsigned long lastLetterAt = 0;
-  static char letter[2] = "";
+void drawWifiAnimationFrame(uint8_t frameIndex) {
+  if (frameIndex >= WIFI_ANIMATION_FRAME_COUNT) return;
 
-  if (lastLetterAt != 0 && millis() - lastLetterAt < STARTUP_LETTER_INTERVAL_MS) {
+  MD_MAX72XX *mx = matrix.getGraphicObject();
+  const uint8_t displayWidth = MAX_DEVICES * 8;
+  const uint8_t drawWidth = WIFI_ANIMATION_WIDTH < displayWidth ? WIFI_ANIMATION_WIDTH : displayWidth;
+  const uint8_t drawHeight = WIFI_ANIMATION_HEIGHT < 8 ? WIFI_ANIMATION_HEIGHT : 8;
+
+  mx->control(MD_MAX72XX::UPDATE, MD_MAX72XX::OFF);
+  mx->clear();
+
+  for (uint8_t y = 0; y < drawHeight; y++) {
+    uint32_t rowBits = pgm_read_dword(&WIFI_ANIMATION_FRAMES[frameIndex][y]);
+
+    for (uint8_t x = 0; x < drawWidth; x++) {
+      uint8_t sourceBit = WIFI_ANIMATION_WIDTH - 1 - x;
+      if (rowBits & (UINT32_C(1) << sourceBit)) {
+        mx->setPoint(y, displayWidth - 1 - x, true);
+      }
+    }
+  }
+
+  mx->update();
+  mx->control(MD_MAX72XX::UPDATE, MD_MAX72XX::ON);
+}
+
+void serviceWifiConnectAnimation() {
+  static uint8_t frameIndex = 0;
+  static unsigned long lastFrameAt = 0;
+
+  if (lastFrameAt != 0 && millis() - lastFrameAt < WIFI_ANIMATION_FRAME_DELAY_MS) {
     return;
   }
 
-  letter[0] = STARTUP_TEXT[textIndex];
-  letter[1] = '\0';
-
-  displayStaticText(letter);
-
-  textIndex = (textIndex + 1) % (sizeof(STARTUP_TEXT) - 1);
-  lastLetterAt = millis();
+  drawWifiAnimationFrame(frameIndex);
+  frameIndex = (frameIndex + 1) % WIFI_ANIMATION_FRAME_COUNT;
+  lastFrameAt = millis();
 }
 
 void serviceDisplay() {
@@ -345,7 +366,7 @@ bool connectSavedWiFi() {
     return false;
   }
 
-  serviceStartupText();
+  serviceWifiConnectAnimation();
   WiFi.mode(WIFI_STA);
   WiFi.begin(savedSsid.c_str(), savedPassword.c_str());
 
@@ -354,7 +375,7 @@ bool connectSavedWiFi() {
 
   unsigned long startedAt = millis();
   while (WiFi.status() != WL_CONNECTED && millis() - startedAt < WIFI_CONNECT_TIMEOUT_MS) {
-    serviceStartupText();
+    serviceWifiConnectAnimation();
     delay(50);
     Serial.print('.');
   }
