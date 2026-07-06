@@ -1,6 +1,21 @@
 # ESP8266 MAX7219 Grant Display Setup
 
-This guide explains how to prepare, wire, program, and test the ESP8266 + MAX7219 LED matrix display for [`esp8266.ino`](./esp8266.ino).
+This guide explains how to prepare, wire, program, and test the ESP8266 + MAX7219 LED matrix display.
+
+There are two sketches:
+
+- [`esp8266.ino`](./esp8266.ino): direct sketch with WiFi values edited in code.
+- [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino): universal firmware with a WiFi setup page on the ESP8266.
+
+For GitHub/web-installer firmware, use [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino).
+
+The easiest way to flash the ESP8266 is to use the ready-made firmware file:
+
+```text
+nounwtfsetup/nounwtfgrant.bin
+```
+
+You do not need Arduino IDE for the `.bin` flashing method.
 
 Current focus:
 
@@ -34,9 +49,10 @@ Example output:
 - MAX7219 8x8 LED matrix module, or chained MAX7219 modules
 - Jumper wires
 - USB data cable for the ESP8266
-- Computer with Arduino IDE
+- Windows computer with Chrome, Edge, or Opera
 - 5V power source or power bank
 - Bundled CH34x Windows driver ZIP: [`CH34x_Install_Windows_v3_4.zip`](./CH34x_Install_Windows_v3_4.zip)
+- Ready-made firmware: [`nounwtfsetup/nounwtfgrant.bin`](./nounwtfsetup/nounwtfgrant.bin)
 
 Use a real USB data cable. Many charging cables power the board but do not expose the serial port.
 
@@ -113,7 +129,61 @@ If no COM port appears:
 5. Restart Windows.
 6. Connect the ESP8266 again.
 
-## 4. Install Arduino IDE
+## 4. Flash The Ready-Made Firmware
+
+This is the easiest method. Use the included `.bin` file instead of compiling the `.ino` sketch.
+
+Use a desktop browser that supports Web Serial, such as Chrome, Edge, or Opera.
+
+1. Connect the ESP8266 to your computer with a USB data cable.
+2. Open this web flasher:
+
+   ```text
+   https://esptool.spacehuhn.com/
+   ```
+
+3. Click `Connect`.
+4. Select the ESP8266 serial port.
+   - It usually appears as `USB-SERIAL CH340`.
+   - If you are not sure, unplug the ESP8266, click `Connect` again, then plug it back in and choose the new port that appears.
+5. Select or upload this firmware file:
+
+   ```text
+   nounwtfsetup/nounwtfgrant.bin
+   ```
+
+6. If the flasher asks for an address, use:
+
+   ```text
+   0x00000
+   ```
+
+7. Use upload speed `115200` if there is a baud-rate setting.
+8. Click `Program`.
+9. Wait until flashing is finished.
+10. Reset or unplug/replug the ESP8266.
+
+On first boot, the display should start the WiFi setup flow. Connect your computer or phone to:
+
+```text
+NOUNWTF-SETUP
+```
+
+Then open:
+
+```text
+http://192.168.4.1
+```
+
+Save your 2.4GHz WiFi SSID and password. The ESP8266 restarts, connects to WiFi, and starts displaying grant data.
+
+If the ESP8266 auto-connects to an old WiFi network after flashing, old credentials are still saved in flash. Open the device IP in a browser and click `Clear Saved WiFi`, or erase flash before programming if the web flasher gives that option.
+
+## 5. Optional: Build From Arduino IDE
+
+Use this method only if you want to edit or rebuild the firmware yourself.
+
+## 6. Install Arduino IDE
 
 1. Download and install Arduino IDE.
 2. Open Arduino IDE.
@@ -128,7 +198,7 @@ If no COM port appears:
 6. If there is already another URL in the field, separate URLs with commas.
 7. Click `OK`.
 
-## 5. Install ESP8266 Board Support
+## 7. Install ESP8266 Board Support
 
 1. Open `Tools > Board > Boards Manager`.
 2. Search for `esp8266`.
@@ -138,7 +208,7 @@ If no COM port appears:
    - NodeMCU: `Tools > Board > ESP8266 Boards > NodeMCU 1.0`
    - Wemos D1 mini: `Tools > Board > ESP8266 Boards > LOLIN(WEMOS) D1 R2 & mini`
 
-## 6. Install Display Libraries
+## 8. Install Display Libraries
 
 1. Open `Tools > Manage Libraries`.
 2. Search for `MD_Parola`.
@@ -148,7 +218,7 @@ If no COM port appears:
 
 The WiFi and HTTPS libraries used by the sketch are included with the ESP8266 board package.
 
-## 7. Wire ESP8266 To MAX7219
+## 9. Wire ESP8266 To MAX7219
 
 Disconnect USB power before wiring.
 
@@ -168,7 +238,7 @@ Important power notes:
 - For multiple matrix modules, use a separate 5V supply if USB power is unstable.
 - The external 5V supply ground and ESP8266 ground must be connected together.
 
-## 8. Wire Multiple MAX7219 Modules
+## 10. Wire Multiple MAX7219 Modules
 
 Connect the ESP8266 to the input side of the first module. Then chain modules like this:
 
@@ -193,9 +263,9 @@ Use the number of individual 8x8 matrices:
 - Two 32x8 modules chained together: `8`
 - Two single 8x8 modules chained together: `2`
 
-## 9. Configure WiFi And API
+## 11. Configure WiFi And API
 
-Open [`esp8266.ino`](./esp8266.ino) and edit:
+If using [`esp8266.ino`](./esp8266.ino), edit:
 
 ```cpp
 const char WIFI_SSID[] = "xxx";
@@ -203,6 +273,8 @@ const char WIFI_PASSWORD[] = "xxx";
 ```
 
 Use your real WiFi name and password before uploading.
+
+If using [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino), do not hardcode WiFi credentials. The ESP8266 opens a setup access point named `NOUNWTF-SETUP` when no saved WiFi is available.
 
 The API endpoint is:
 
@@ -239,10 +311,10 @@ The sketch reads up to 4 grant objects from `data`:
 
 Do not publish the sketch publicly while it contains a real WiFi password.
 
-## 10. Upload The Sketch
+## 12. Upload From Arduino IDE
 
 1. Connect the ESP8266 to USB.
-2. Open [`esp8266.ino`](./esp8266.ino) in Arduino IDE.
+2. Open either [`esp8266.ino`](./esp8266.ino) or [`nounwtfsetup/nounwtfsetup.ino`](./nounwtfsetup/nounwtfsetup.ino) in Arduino IDE.
 3. Select the board from `Tools > Board`.
 4. Select the port from `Tools > Port`.
 5. Use these common upload settings:
@@ -255,7 +327,7 @@ Do not publish the sketch publicly while it contains a real WiFi password.
 
 If upload fails, close Serial Monitor and try again.
 
-## 11. Test The Display
+## 13. Test The Display
 
 1. Keep the ESP8266 connected by USB.
 2. Open `Tools > Serial Monitor`.
@@ -265,11 +337,15 @@ If upload fails, close Serial Monitor and try again.
 
 Expected boot flow:
 
-1. While connecting to WiFi, the display shows `noun.wtf` one character at a time.
-2. After WiFi connects, it briefly displays `WiFi connected`.
-3. Then it displays `Loading grant...`.
-4. The ESP8266 fetches the grant API.
-5. The matrix scrolls each grant one by one, for example:
+1. With `nounwtfsetup.ino`, first boot opens the `NOUNWTF-SETUP` WiFi access point if no saved WiFi is available.
+2. Connect to `NOUNWTF-SETUP` and open `http://192.168.4.1`.
+3. Save your 2.4GHz WiFi SSID and password.
+4. The ESP8266 restarts.
+5. While connecting to WiFi, the display shows `noun.wtf` one character at a time.
+6. After WiFi connects, it briefly displays `WiFi connected`.
+7. Then it displays `Loading grants...`.
+8. The ESP8266 fetches the grant API.
+9. The matrix scrolls each grant one by one, for example:
 
    ```text
    #34 | NOUN.WTF://PHYSICALART | xppaicyber.eth
@@ -277,7 +353,7 @@ Expected boot flow:
 
 The sketch fetches fresh API data every 5 minutes. If WiFi or API fetch fails, it retries every 30 seconds.
 
-## 12. Manual Text Test
+## 14. Manual Text Test
 
 You can temporarily override the display text from Serial Monitor:
 
@@ -287,7 +363,7 @@ You can temporarily override the display text from Serial Monitor:
 
 The matrix scrolls your typed message. The next API refresh replaces it with the latest grant data.
 
-## 13. Useful Sketch Settings
+## 15. Useful Sketch Settings
 
 Brightness:
 
@@ -329,7 +405,7 @@ API retry interval:
 const unsigned long API_RETRY_INTERVAL_MS = 30000;
 ```
 
-## 14. If The Text Looks Wrong
+## 16. If The Text Looks Wrong
 
 Most MAX7219 matrix modules use `FC16_HW`, which is selected in the sketch:
 
@@ -347,7 +423,7 @@ If text is mirrored, upside down, shifted, or scrambled, try one of these:
 
 Only leave one `HARDWARE_TYPE` line enabled at a time.
 
-## 15. Troubleshooting
+## 17. Troubleshooting
 
 Board does not appear in Arduino IDE:
 
@@ -366,6 +442,15 @@ Upload fails:
 - Press and hold `FLASH` while upload starts if your board does not auto-enter bootloader mode.
 - Release `FLASH` when Arduino IDE starts writing.
 - Press `RST` once if the board does not run after upload.
+
+Browser flasher does not connect:
+
+- Use Chrome, Edge, or Opera on a desktop computer.
+- Close Arduino IDE Serial Monitor before connecting.
+- Reinstall the CH34x driver.
+- Try another USB data cable.
+- Try upload speed `115200`.
+- Press and hold `FLASH` while connecting if your ESP8266 board does not auto-enter bootloader mode.
 
 No LEDs turn on:
 
@@ -417,8 +502,11 @@ Display shows `API parse failed`:
 - Open Serial Monitor and read the printed API response.
 - The sketch expects `id`, `title`, and `proposer` string fields.
 
-## 16. Reference Links
+## 18. Reference Links
 
 - Bundled CH34x Windows driver: [`CH34x_Install_Windows_v3_4.zip`](./CH34x_Install_Windows_v3_4.zip)
+- Ready-made firmware: [`nounwtfsetup/nounwtfgrant.bin`](./nounwtfsetup/nounwtfgrant.bin)
+- Spacehuhn browser flasher: https://esptool.spacehuhn.com/
+- Spacehuhn browser flashing guide: https://docs.spacehuhn.com/blog/espwebtool/
 - ESP8266 Arduino core: https://github.com/esp8266/Arduino
 - ESP8266 board manager URL: `https://arduino.esp8266.com/stable/package_esp8266com_index.json`
