@@ -215,19 +215,27 @@ Expected API response:
 ```json
 {
   "success": true,
-  "data": {
-    "id": "34",
-    "title": "NOUN.WTF://PHYSICALART",
-    "proposer": "xppaicyber.eth"
-  }
+  "limit": 4,
+  "data": [
+    {
+      "id": "34",
+      "title": "NOUN.WTF://PHYSICALART",
+      "proposer": "xppaicyber.eth"
+    },
+    {
+      "id": "33",
+      "title": "Raspberry Pie",
+      "proposer": "fattybuthappy.eth"
+    }
+  ]
 }
 ```
 
-The sketch reads:
+The sketch reads up to 4 grant objects from `data`:
 
-- `data.id`
-- `data.title`
-- `data.proposer`
+- `data[].id`
+- `data[].title`
+- `data[].proposer`
 
 Do not publish the sketch publicly while it contains a real WiFi password.
 
@@ -261,7 +269,7 @@ Expected boot flow:
 2. After WiFi connects, it briefly displays `WiFi connected`.
 3. Then it displays `Loading grant...`.
 4. The ESP8266 fetches the grant API.
-5. The matrix scrolls the grant data, for example:
+5. The matrix scrolls each grant one by one, for example:
 
    ```text
    #34 | NOUN.WTF://PHYSICALART | xppaicyber.eth
