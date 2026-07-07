@@ -1,1070 +1,1278 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NOUN.WTF MAX7219 Animator</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #f3efe6;
-      --ink: #171923;
-      --muted: #667085;
-      --line: #cfd6dd;
-      --panel: #ffffff;
-      --led-off: #1f2933;
-      --led-on: #40d982;
-      --accent: #e85d75;
-      --accent-2: #f0b429;
-      --focus: #2563eb;
-      --shadow: 0 12px 32px rgba(23, 25, 35, 0.12);
-    }
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NOUN.WTF — MAX7219 Animator</title>
+    <meta name="description" content="32×8 frame animator for ESP8266 + four chained MAX7219 modules. Draw, animate, and export production-ready C headers.">
+    <style>
+        :root {
+            --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, "SF Mono", monospace;
+            --bg: #faf9f6;
+            --surface: #ffffff;
+            --surface-hover: #f5f4f1;
+            --ink: #1a1a1a;
+            --ink-secondary: #5c5c5c;
+            --ink-muted: #8c8c8c;
+            --border: #e8e5df;
+            --border-focus: #c4b5fd;
+            --accent: #7c3aed;
+            --accent-soft: #ede9fe;
+            --accent-warm: #f59e0b;
+            --danger: #ef4444;
+            --danger-soft: #fef2f2;
+            --led-off: #1e293b;
+            --led-on: #34d399;
+            --led-glow: rgba(52, 211, 153, 0.7);
+            --matrix-bg: #0f172a;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+            --transition-fast: 120ms ease-out;
+            --transition-smooth: 200ms ease;
+        }
 
-    * {
-      box-sizing: border-box;
-    }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+        }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 15px;
-      letter-spacing: 0;
-    }
+        html {
+            -webkit-text-size-adjust: 100%;
+            scroll-behavior: smooth;
+        }
 
-    button,
-    input,
-    textarea {
-      font: inherit;
-      letter-spacing: 0;
-    }
+        body {
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            line-height: 1.5;
+            letter-spacing: -0.01em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
-    button {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #ffffff;
-      color: var(--ink);
-      cursor: pointer;
-      min-height: 36px;
-      padding: 8px 11px;
-    }
+        button,
+        input,
+        textarea {
+            font: inherit;
+            letter-spacing: inherit;
+            color: inherit;
+        }
 
-    button:hover {
-      border-color: #9aa6b2;
-    }
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            color: var(--ink);
+            cursor: pointer;
+            min-height: 36px;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+            transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    button:focus-visible,
-    input:focus-visible,
-    textarea:focus-visible {
-      outline: 3px solid rgba(37, 99, 235, 0.24);
-      outline-offset: 2px;
-      border-color: var(--focus);
-    }
+        button:hover {
+            background: var(--surface-hover);
+            border-color: #d4d0c8;
+            transform: translateY(-0.5px);
+            box-shadow: var(--shadow-sm);
+        }
+        button:active {
+            transform: translateY(0);
+            transition-duration: 60ms;
+        }
+        button:focus-visible {
+            outline: 3px solid var(--border-focus);
+            outline-offset: 2px;
+            border-color: var(--accent);
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
+            transform: none;
+            box-shadow: none;
+            pointer-events: none;
+        }
 
-    button.active {
-      background: var(--ink);
-      border-color: var(--ink);
-      color: #ffffff;
-    }
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 600;
+        }
+        button.primary:hover {
+            background: #6d28d9;
+            border-color: #6d28d9;
+            box-shadow: 0 2px 12px rgba(124, 58, 237, 0.3);
+        }
+        button.active {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: #fff;
+        }
+        button.danger {
+            border-color: #fecaca;
+            color: #b91c1c;
+            background: var(--danger-soft);
+        }
+        button.danger:hover {
+            background: #fee2e2;
+            border-color: #f87171;
+        }
 
-    button.danger {
-      border-color: #f0a1ad;
-      color: #a61b34;
-    }
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            color: var(--ink);
+            padding: 9px 11px;
+            transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+        }
+        input:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+        textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            line-height: 1.55;
+            tab-size: 2;
+        }
 
-    button.primary {
-      background: var(--accent);
-      border-color: var(--accent);
-      color: #ffffff;
-    }
+        .app-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 22px clamp(20px, 4vw, 44px) 16px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .app-bar h1 {
+            font-size: 22px;
+            font-weight: 750;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+        }
+        .app-bar .subtitle {
+            margin-top: 3px;
+            color: var(--ink-muted);
+            font-size: 12.5px;
+            font-weight: 450;
+        }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12.5px;
+            color: var(--ink-secondary);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-smooth);
+        }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #34d399;
+            flex-shrink: 0;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+            }
+        }
 
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.45;
-    }
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 400px;
+            gap: 20px;
+            padding: 20px clamp(20px, 4vw, 44px) 36px;
+            align-items: start;
+        }
 
-    input,
-    textarea {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #ffffff;
-      color: var(--ink);
-      padding: 9px 10px;
-    }
+        .workspace,
+        .side-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            transition: box-shadow var(--transition-smooth);
+        }
+        .workspace:hover,
+        .side-panel:hover {
+            box-shadow: var(--shadow-lg);
+        }
+        .workspace {
+            min-width: 0;
+            padding: 20px;
+            contain: layout style;
+        }
+        .side-panel {
+            display: grid;
+            gap: 18px;
+            padding: 20px;
+            align-self: start;
+            position: sticky;
+            top: 100px;
+        }
 
-    textarea {
-      min-height: 260px;
-      resize: vertical;
-      font-family: "Cascadia Mono", Consolas, monospace;
-      font-size: 12px;
-      line-height: 1.45;
-      tab-size: 2;
-    }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .segmented {
+            display: inline-flex;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+        .segmented button {
+            border: 0;
+            border-right: 1px solid var(--border);
+            border-radius: 0;
+            min-width: 64px;
+            font-weight: 500;
+        }
+        .segmented button:last-child {
+            border-right: 0;
+        }
+        .segmented button.active {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: #fff;
+        }
+        .control-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 7px;
+        }
 
-    .app-bar {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 20px clamp(16px, 4vw, 40px) 14px;
-      border-bottom: 1px solid rgba(23, 25, 35, 0.12);
-      background: rgba(255, 255, 255, 0.7);
-    }
+        .matrix-scroll {
+            overflow-x: auto;
+            padding: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: var(--radius-md);
+            background: var(--matrix-bg);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .matrix-grid {
+            --cell: 20px;
+            display: grid;
+            grid-template-columns: repeat(32, var(--cell));
+            grid-template-rows: repeat(8, var(--cell));
+            gap: 3px;
+            width: max-content;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .led-cell {
+            width: var(--cell);
+            height: var(--cell);
+            min-height: 0;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            background: var(--led-off);
+            cursor: crosshair;
+            transition: background-color 80ms ease-out, box-shadow 80ms ease-out, border-color 80ms ease-out;
+            will-change: background-color, box-shadow;
+        }
+        .led-cell.on {
+            background: var(--led-on);
+            border-color: rgba(52, 211, 153, 0.7);
+            box-shadow: 0 0 12px var(--led-glow), inset 0 0 4px rgba(255, 255, 255, 0.25);
+        }
+        .led-cell:hover {
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.15);
+        }
+        .led-cell.on:hover {
+            box-shadow: 0 0 18px var(--led-glow), inset 0 0 6px rgba(255, 255, 255, 0.35);
+        }
 
-    h1 {
-      margin: 0;
-      font-size: 24px;
-      line-height: 1.1;
-      font-weight: 800;
-    }
+        .module-ruler {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            width: calc(32 * var(--cell, 20px) + 31 * 3px);
+            max-width: 100%;
+            margin-top: 10px;
+            color: var(--ink-muted);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+        .module-ruler span {
+            border-top: 3px solid var(--accent-warm);
+            padding-top: 5px;
+            text-align: center;
+            opacity: 0.75;
+        }
 
-    .subtitle {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-size: 13px;
-    }
+        .preview-wrap {
+            display: grid;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            background: #fafbfc;
+            overflow-x: auto;          /* allow scrolling when preview wider than container */
+            -webkit-overflow-scrolling: touch;
+        }
+        .playback {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .preview-grid {
+            --pc: 9px;
+            display: grid;
+            grid-template-columns: repeat(32, var(--pc));
+            grid-template-rows: repeat(8, var(--pc));
+            gap: 2px;
+            width: max-content;        /* natural width, never clips */
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            background: var(--matrix-bg);
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
+            /* overflow removed – parent handles scroll */
+        }
+        .preview-led {
+            width: var(--pc);
+            height: var(--pc);
+            border-radius: 50%;
+            background: #334155;
+            transition: background 80ms ease-out, box-shadow 80ms ease-out;
+        }
+        .preview-led.on {
+            background: var(--led-on);
+            box-shadow: 0 0 7px var(--led-glow);
+        }
 
-    .status {
-      min-width: 180px;
-      max-width: 360px;
-      color: #344054;
-      font-size: 13px;
-      text-align: right;
-    }
+        .field {
+            display: grid;
+            gap: 7px;
+        }
+        .section-title {
+            color: var(--ink-muted);
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .range-field {
+            display: grid;
+            grid-template-columns: 1fr 62px;
+            gap: 8px;
+            align-items: center;
+            min-width: 200px;
+        }
+        .range-field input[type="range"] {
+            padding: 0;
+            accent-color: var(--accent);
+        }
+        .range-value {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ink-secondary);
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
 
-    .layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 390px;
-      gap: 18px;
-      padding: 18px clamp(16px, 4vw, 40px) 32px;
-    }
+        .frame-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));  /* wide enough for mini-grid ~95px */
+            gap: 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            padding-right: 4px;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+        }
+        .frame-tile {
+            display: grid;
+            gap: 5px;
+            justify-items: center;
+            padding: 9px 7px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-md);
+            background: var(--surface);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--ink-muted);
+            overflow: hidden;            /* safe overflow guard */
+        }
+        .frame-tile:hover {
+            border-color: #c4b5fd;
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+        .frame-tile.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-soft);
+            color: var(--accent);
+            font-weight: 700;
+        }
+        .mini-grid {
+            display: grid;
+            grid-template-columns: repeat(32, 2.2px);
+            grid-template-rows: repeat(8, 2.2px);
+            gap: 0.8px;
+            padding: 4px;
+            border-radius: 4px;
+            background: var(--matrix-bg);
+            pointer-events: none;
+        }
+        .mini-led {
+            width: 2.2px;
+            height: 2.2px;
+            border-radius: 0.6px;
+            background: #334155;
+        }
+        .mini-led.on {
+            background: var(--led-on);
+        }
 
-    .workspace,
-    .side-panel {
-      background: var(--panel);
-      border: 1px solid rgba(23, 25, 35, 0.12);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-    }
+        .transform-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+        .transform-grid button {
+            min-width: 0;
+            padding: 8px 4px;
+            font-weight: 600;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+        }
+        .export-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+        }
+        .import-block {
+            display: grid;
+            gap: 8px;
+        }
+        .import-block textarea {
+            min-height: 100px;
+        }
 
-    .workspace {
-      min-width: 0;
-      padding: 16px;
-    }
+        .kbd-hint {
+            display: inline-block;
+            font-size: 10px;
+            color: var(--ink-muted);
+            background: #f3f4f6;
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-left: 3px;
+            font-family: var(--font-mono);
+            letter-spacing: 0;
+        }
 
-    .side-panel {
-      align-self: start;
-      display: grid;
-      gap: 16px;
-      padding: 16px;
-    }
-
-    .toolbar,
-    .control-row,
-    .frame-actions,
-    .playback {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .toolbar {
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-
-    .segmented {
-      display: inline-flex;
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-    }
-
-    .segmented button {
-      border: 0;
-      border-right: 1px solid var(--line);
-      border-radius: 0;
-      min-width: 68px;
-    }
-
-    .segmented button:last-child {
-      border-right: 0;
-    }
-
-    .matrix-scroll {
-      overflow-x: auto;
-      padding: 12px;
-      border: 1px solid #d7dde3;
-      border-radius: 8px;
-      background: #111827;
-    }
-
-    .matrix-grid {
-      --cell: 18px;
-      display: grid;
-      grid-template-columns: repeat(32, var(--cell));
-      grid-template-rows: repeat(8, var(--cell));
-      gap: 4px;
-      width: max-content;
-      touch-action: none;
-      user-select: none;
-    }
-
-    .led-cell {
-      width: var(--cell);
-      height: var(--cell);
-      min-height: 0;
-      padding: 0;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 4px;
-      background: var(--led-off);
-    }
-
-    .led-cell.on {
-      background: var(--led-on);
-      border-color: rgba(64, 217, 130, 0.8);
-      box-shadow: 0 0 10px rgba(64, 217, 130, 0.65);
-    }
-
-    .module-ruler {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 4px;
-      width: calc(32 * 18px + 31 * 4px);
-      max-width: 100%;
-      margin: 8px 0 0;
-      color: #475467;
-      font-size: 12px;
-    }
-
-    .module-ruler span {
-      border-top: 3px solid var(--accent-2);
-      padding-top: 4px;
-      text-align: center;
-    }
-
-    .preview-wrap {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-      padding: 14px;
-      border: 1px solid #d7dde3;
-      border-radius: 8px;
-      background: #f8fafc;
-    }
-
-    .preview-grid {
-      --preview-cell: 9px;
-      display: grid;
-      grid-template-columns: repeat(32, var(--preview-cell));
-      grid-template-rows: repeat(8, var(--preview-cell));
-      gap: 2px;
-      width: max-content;
-      max-width: 100%;
-      overflow: hidden;
-      padding: 10px;
-      border-radius: 6px;
-      background: #111827;
-    }
-
-    .preview-led {
-      width: var(--preview-cell);
-      height: var(--preview-cell);
-      border-radius: 50%;
-      background: #293241;
-    }
-
-    .preview-led.on {
-      background: var(--led-on);
-      box-shadow: 0 0 8px rgba(64, 217, 130, 0.7);
-    }
-
-    .field {
-      display: grid;
-      gap: 6px;
-    }
-
-    .field label,
-    .section-title {
-      color: #344054;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .range-field {
-      display: grid;
-      grid-template-columns: 1fr 70px;
-      gap: 8px;
-      align-items: center;
-      min-width: 250px;
-    }
-
-    .range-field input[type="range"] {
-      padding: 0;
-    }
-
-    .range-value {
-      color: #344054;
-      font-size: 13px;
-      text-align: right;
-    }
-
-    .frame-strip {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
-      gap: 8px;
-      max-height: 250px;
-      overflow: auto;
-      padding-right: 2px;
-    }
-
-    .frame-tile {
-      display: grid;
-      gap: 6px;
-      justify-items: center;
-      padding: 8px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      background: #ffffff;
-    }
-
-    .frame-tile.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(232, 93, 117, 0.16);
-    }
-
-    .mini-grid {
-      display: grid;
-      grid-template-columns: repeat(32, 2px);
-      grid-template-rows: repeat(8, 2px);
-      gap: 1px;
-      padding: 4px;
-      border-radius: 5px;
-      background: #111827;
-    }
-
-    .mini-led {
-      width: 2px;
-      height: 2px;
-      border-radius: 1px;
-      background: #293241;
-    }
-
-    .mini-led.on {
-      background: var(--led-on);
-    }
-
-    .transform-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .transform-grid button {
-      min-width: 0;
-      padding: 8px 6px;
-    }
-
-    .export-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .import-block {
-      display: grid;
-      gap: 8px;
-    }
-
-    .import-block textarea {
-      min-height: 110px;
-    }
-
-    @media (max-width: 980px) {
-      .layout {
-        grid-template-columns: 1fr;
-      }
-
-      .side-panel {
-        align-self: stretch;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .app-bar {
-        align-items: start;
-        flex-direction: column;
-      }
-
-      .status {
-        max-width: none;
-        min-width: 0;
-        text-align: left;
-      }
-
-      .toolbar {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .segmented,
-      .control-row,
-      .frame-actions,
-      .playback {
-        width: 100%;
-      }
-
-      .segmented button,
-      .control-row button,
-      .frame-actions button {
-        flex: 1;
-      }
-
-      .range-field {
-        min-width: 0;
-        width: 100%;
-      }
-
-      .preview-grid {
-        --preview-cell: 7px;
-      }
-    }
-  </style>
+        @media (max-width: 1020px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            .side-panel {
+                position: static;
+                align-self: stretch;
+            }
+            .matrix-grid {
+                --cell: 16px;
+            }
+            .preview-grid {
+                --pc: 7px;
+            }
+        }
+        @media (max-width: 640px) {
+            .app-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .segmented,
+            .control-row,
+            .playback {
+                width: 100%;
+            }
+            .segmented button {
+                flex: 1;
+            }
+            .range-field {
+                min-width: 0;
+                width: 100%;
+            }
+            .matrix-grid {
+                --cell: 13px;
+                gap: 2px;
+            }
+            .led-cell {
+                border-radius: 3px;
+            }
+            .preview-grid {
+                --pc: 6px;
+                gap: 1.5px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <header class="app-bar">
-    <div>
-      <h1>NOUN.WTF MAX7219 Animator</h1>
-      <p class="subtitle">32 x 8 frames for ESP8266 + four chained MAX7219 modules</p>
-    </div>
-    <div class="status" id="status">Ready</div>
-  </header>
-
-  <main class="layout">
-    <section class="workspace" aria-labelledby="editor-title">
-      <div class="toolbar">
+    <header class="app-bar">
         <div>
-          <div class="section-title" id="editor-title">Frame Editor</div>
-          <div class="segmented" id="toolButtons" aria-label="Drawing tool">
-            <button type="button" data-tool="draw" class="active">Draw</button>
-            <button type="button" data-tool="erase">Erase</button>
-            <button type="button" data-tool="toggle">Toggle</button>
-          </div>
+            <h1>NOUN.WTF MAX7219 Animator</h1>
+            <p class="subtitle">32 × 8 frames for ESP8266 + four chained MAX7219 modules</p>
         </div>
-        <div class="control-row">
-          <button type="button" id="clearFrame">Clear</button>
-          <button type="button" id="invertFrame">Invert</button>
-          <button type="button" id="mirrorFrame">Mirror</button>
-          <button type="button" id="loadDefault">NOUN.WTF</button>
+        <div class="status-pill" id="statusPill">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span id="statusText">Ready</span>
         </div>
-      </div>
+    </header>
 
-      <div class="matrix-scroll" aria-label="MAX7219 drawing grid">
-        <div class="matrix-grid" id="matrixGrid"></div>
-      </div>
-      <div class="module-ruler" aria-hidden="true">
-        <span>Module 1</span>
-        <span>Module 2</span>
-        <span>Module 3</span>
-        <span>Module 4</span>
-      </div>
+    <main class="layout">
+        <section class="workspace" aria-labelledby="editor-title">
+            <div class="toolbar">
+                <div>
+                    <div class="section-title" id="editor-title">Frame Editor</div>
+                    <div class="segmented" id="toolButtons" aria-label="Drawing tool" role="radiogroup">
+                        <button type="button" data-tool="draw" class="active" role="radio" aria-checked="true">Draw <span class="kbd-hint">D</span></button>
+                        <button type="button" data-tool="erase" role="radio" aria-checked="false">Erase <span class="kbd-hint">E</span></button>
+                        <button type="button" data-tool="toggle" role="radio" aria-checked="false">Toggle <span class="kbd-hint">T</span></button>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <button type="button" id="clearFrame">Clear</button>
+                    <button type="button" id="invertFrame">Invert</button>
+                    <button type="button" id="mirrorFrame">Mirror</button>
+                    <button type="button" id="loadDefault" class="primary">NOUN.WTF</button>
+                </div>
+            </div>
 
-      <div class="preview-wrap">
-        <div class="playback">
-          <button type="button" id="prevFrame">Prev</button>
-          <button type="button" id="playToggle" class="primary">Play</button>
-          <button type="button" id="nextFrame">Next</button>
-          <div class="range-field">
-            <input type="range" id="delayRange" min="80" max="800" step="20" value="180" aria-label="Frame delay">
-            <div class="range-value" id="delayValue">180 ms</div>
-          </div>
-        </div>
-        <div class="preview-grid" id="previewGrid" aria-label="Animation preview"></div>
-      </div>
-    </section>
+            <div class="matrix-scroll" aria-label="MAX7219 32×8 drawing grid">
+                <div class="matrix-grid" id="matrixGrid" role="grid" aria-label="LED matrix editor"></div>
+            </div>
+            <div class="module-ruler" aria-hidden="true">
+                <span>Module 1</span><span>Module 2</span><span>Module 3</span><span>Module 4</span>
+            </div>
 
-    <aside class="side-panel" aria-label="Animation controls">
-      <div class="field">
-        <div class="section-title">Frames</div>
-        <div class="frame-actions">
-          <button type="button" id="addFrame">+</button>
-          <button type="button" id="duplicateFrame">Duplicate</button>
-          <button type="button" id="deleteFrame" class="danger">Delete</button>
-        </div>
-        <div class="frame-strip" id="frameStrip"></div>
-      </div>
+            <div class="preview-wrap">
+                <div class="playback">
+                    <button type="button" id="prevFrame" aria-label="Previous frame">◀ Prev</button>
+                    <button type="button" id="playToggle" class="primary" aria-label="Play animation">▶ Play</button>
+                    <button type="button" id="nextFrame" aria-label="Next frame">Next ▶</button>
+                    <div class="range-field">
+                        <input type="range" id="delayRange" min="60" max="900" step="10" value="180" aria-label="Frame delay in milliseconds">
+                        <div class="range-value" id="delayValue">180 ms</div>
+                    </div>
+                </div>
+                <div class="preview-grid" id="previewGrid" aria-label="Animation preview" role="img"></div>
+            </div>
+        </section>
 
-      <div class="field">
-        <label for="stampText">Text Stamp</label>
-        <div class="control-row">
-          <input type="text" id="stampText" value="NOUN.WTF" maxlength="12" aria-label="Text to stamp">
-          <button type="button" id="stampButton">Stamp</button>
-        </div>
-      </div>
+        <aside class="side-panel" aria-label="Animation controls">
+            <div class="field">
+                <div class="section-title">Frames <span class="kbd-hint">[ ]</span></div>
+                <div class="frame-actions" style="display:flex;flex-wrap:wrap;gap:7px;">
+                    <button type="button" id="addFrame">+ Add</button>
+                    <button type="button" id="duplicateFrame">Duplicate</button>
+                    <button type="button" id="deleteFrame" class="danger">Delete</button>
+                </div>
+                <div class="frame-strip" id="frameStrip" role="listbox" aria-label="Frame thumbnails"></div>
+            </div>
 
-      <div class="field">
-        <div class="section-title">Move</div>
-        <div class="transform-grid">
-          <button type="button" data-shift="-1,0">L</button>
-          <button type="button" data-shift="1,0">R</button>
-          <button type="button" data-shift="0,-1">U</button>
-          <button type="button" data-shift="0,1">D</button>
-        </div>
-      </div>
+            <div class="field">
+                <label for="stampText" class="section-title" style="display:block;">Text Stamp</label>
+                <div class="control-row">
+                    <input type="text" id="stampText" value="NOUN.WTF" maxlength="12" aria-label="Text to stamp onto matrix" style="flex:1;">
+                    <button type="button" id="stampButton">Stamp</button>
+                </div>
+            </div>
 
-      <div class="field">
-        <div class="section-title">Export</div>
-        <div class="export-actions">
-          <button type="button" id="copyCode">Copy Header</button>
-          <button type="button" id="downloadCode">Download</button>
-        </div>
-        <textarea id="exportCode" spellcheck="false" aria-label="Generated wifi_animation.h code"></textarea>
-      </div>
+            <div class="field">
+                <div class="section-title">Shift Frame</div>
+                <div class="transform-grid">
+                    <button type="button" data-shift="-1,0" aria-label="Shift left">◀ L</button>
+                    <button type="button" data-shift="1,0" aria-label="Shift right">R ▶</button>
+                    <button type="button" data-shift="0,-1" aria-label="Shift up">▲ U</button>
+                    <button type="button" data-shift="0,1" aria-label="Shift down">D ▼</button>
+                </div>
+            </div>
 
-      <div class="import-block">
-        <div class="section-title">Import</div>
-        <textarea id="importCode" spellcheck="false" aria-label="Header code to import"></textarea>
-        <button type="button" id="importButton">Import Header</button>
-      </div>
-    </aside>
-  </main>
+            <div class="field">
+                <div class="section-title">Export Header</div>
+                <div class="export-actions">
+                    <button type="button" id="copyCode">Copy</button>
+                    <button type="button" id="downloadCode" class="primary">Download</button>
+                </div>
+                <textarea id="exportCode" spellcheck="false" readonly aria-label="Generated wifi_animation.h C header code"></textarea>
+            </div>
 
-  <script>
-    (() => {
-      const WIDTH = 32;
-      const HEIGHT = 8;
-      const STORAGE_KEY = "nounwtf.max7219.animator.v1";
-      const DEFAULT_DELAY = 180;
-      const FONT = {
-        "A": ["010", "101", "111", "101", "101"],
-        "B": ["110", "101", "110", "101", "110"],
-        "C": ["111", "100", "100", "100", "111"],
-        "D": ["110", "101", "101", "101", "110"],
-        "E": ["111", "100", "110", "100", "111"],
-        "F": ["111", "100", "110", "100", "100"],
-        "G": ["111", "100", "101", "101", "111"],
-        "H": ["101", "101", "111", "101", "101"],
-        "I": ["111", "010", "010", "010", "111"],
-        "J": ["001", "001", "001", "101", "111"],
-        "K": ["101", "101", "110", "101", "101"],
-        "L": ["100", "100", "100", "100", "111"],
-        "M": ["101", "111", "111", "101", "101"],
-        "N": ["101", "111", "111", "111", "101"],
-        "O": ["111", "101", "101", "101", "111"],
-        "P": ["111", "101", "111", "100", "100"],
-        "Q": ["111", "101", "101", "111", "001"],
-        "R": ["111", "101", "111", "110", "101"],
-        "S": ["111", "100", "111", "001", "111"],
-        "T": ["111", "010", "010", "010", "010"],
-        "U": ["101", "101", "101", "101", "111"],
-        "V": ["101", "101", "101", "101", "010"],
-        "W": ["101", "101", "101", "111", "101"],
-        "X": ["101", "101", "010", "101", "101"],
-        "Y": ["101", "101", "010", "010", "010"],
-        "Z": ["111", "001", "010", "100", "111"],
-        "0": ["111", "101", "101", "101", "111"],
-        "1": ["010", "110", "010", "010", "111"],
-        "2": ["111", "001", "111", "100", "111"],
-        "3": ["111", "001", "111", "001", "111"],
-        "4": ["101", "101", "111", "001", "001"],
-        "5": ["111", "100", "111", "001", "111"],
-        "6": ["111", "100", "111", "101", "111"],
-        "7": ["111", "001", "010", "010", "010"],
-        "8": ["111", "101", "111", "101", "111"],
-        "9": ["111", "101", "111", "001", "111"],
-        ".": ["0", "0", "0", "0", "1"],
-        "-": ["0", "0", "1", "0", "0"],
-        "/": ["001", "001", "010", "100", "100"],
-        ":": ["0", "1", "0", "1", "0"],
-        " ": ["0", "0", "0", "0", "0"]
-      };
+            <div class="import-block">
+                <div class="section-title">Import Header</div>
+                <textarea id="importCode" spellcheck="false" aria-label="Paste header code to import frames" placeholder="Paste wifi_animation.h content here…"></textarea>
+                <button type="button" id="importButton">Import Header</button>
+            </div>
+        </aside>
+    </main>
 
-      const els = {
-        status: document.getElementById("status"),
-        matrixGrid: document.getElementById("matrixGrid"),
-        previewGrid: document.getElementById("previewGrid"),
-        frameStrip: document.getElementById("frameStrip"),
-        toolButtons: document.getElementById("toolButtons"),
-        delayRange: document.getElementById("delayRange"),
-        delayValue: document.getElementById("delayValue"),
-        exportCode: document.getElementById("exportCode"),
-        importCode: document.getElementById("importCode"),
-        stampText: document.getElementById("stampText"),
-        playToggle: document.getElementById("playToggle"),
-        prevFrame: document.getElementById("prevFrame"),
-        nextFrame: document.getElementById("nextFrame"),
-        addFrame: document.getElementById("addFrame"),
-        duplicateFrame: document.getElementById("duplicateFrame"),
-        deleteFrame: document.getElementById("deleteFrame"),
-        clearFrame: document.getElementById("clearFrame"),
-        invertFrame: document.getElementById("invertFrame"),
-        mirrorFrame: document.getElementById("mirrorFrame"),
-        loadDefault: document.getElementById("loadDefault"),
-        stampButton: document.getElementById("stampButton"),
-        copyCode: document.getElementById("copyCode"),
-        downloadCode: document.getElementById("downloadCode"),
-        importButton: document.getElementById("importButton")
-      };
+    <script>
+        (() => {
+            "use strict";
 
-      let frames = createDefaultFrames();
-      let currentFrame = 0;
-      let tool = "draw";
-      let pointerDown = false;
-      let playTimer = null;
-      let delayMs = DEFAULT_DELAY;
+            const WIDTH = 32;
+            const HEIGHT = 8;
+            const STORAGE_KEY = "nounwtf.max7219.animator.v2";
+            const DEFAULT_DELAY = 180;
 
-      function blankFrame() {
-        return Array.from({ length: HEIGHT }, () => Array(WIDTH).fill(false));
-      }
+            const FONT = {
+                A: ["010", "101", "111", "101", "101"],
+                B: ["110", "101", "110", "101", "110"],
+                C: ["111", "100", "100", "100", "111"],
+                D: ["110", "101", "101", "101", "110"],
+                E: ["111", "100", "110", "100", "111"],
+                F: ["111", "100", "110", "100", "100"],
+                G: ["111", "100", "101", "101", "111"],
+                H: ["101", "101", "111", "101", "101"],
+                I: ["111", "010", "010", "010", "111"],
+                J: ["001", "001", "001", "101", "111"],
+                K: ["101", "101", "110", "101", "101"],
+                L: ["100", "100", "100", "100", "111"],
+                M: ["101", "111", "111", "101", "101"],
+                N: ["101", "111", "111", "111", "101"],
+                O: ["111", "101", "101", "101", "111"],
+                P: ["111", "101", "111", "100", "100"],
+                Q: ["111", "101", "101", "111", "001"],
+                R: ["111", "101", "111", "110", "101"],
+                S: ["111", "100", "111", "001", "111"],
+                T: ["111", "010", "010", "010", "010"],
+                U: ["101", "101", "101", "101", "111"],
+                V: ["101", "101", "101", "101", "010"],
+                W: ["101", "101", "101", "111", "101"],
+                X: ["101", "101", "010", "101", "101"],
+                Y: ["101", "101", "010", "010", "010"],
+                Z: ["111", "001", "010", "100", "111"],
+                "0": ["111", "101", "101", "101", "111"],
+                "1": ["010", "110", "010", "010", "111"],
+                "2": ["111", "001", "111", "100", "111"],
+                "3": ["111", "001", "111", "001", "111"],
+                "4": ["101", "101", "111", "001", "001"],
+                "5": ["111", "100", "111", "001", "111"],
+                "6": ["111", "100", "111", "101", "111"],
+                "7": ["111", "001", "010", "010", "010"],
+                "8": ["111", "101", "111", "101", "111"],
+                "9": ["111", "101", "111", "001", "111"],
+                ".": ["0", "0", "0", "0", "1"],
+                "-": ["0", "0", "1", "0", "0"],
+                "/": ["001", "001", "010", "100", "100"],
+                ":": ["0", "1", "0", "1", "0"],
+                " ": ["0", "0", "0", "0", "0"],
+            };
 
-      function cloneFrame(frame) {
-        return frame.map((row) => row.slice());
-      }
+            const els = {
+                statusText: document.getElementById("statusText"),
+                matrixGrid: document.getElementById("matrixGrid"),
+                previewGrid: document.getElementById("previewGrid"),
+                frameStrip: document.getElementById("frameStrip"),
+                toolButtons: document.getElementById("toolButtons"),
+                delayRange: document.getElementById("delayRange"),
+                delayValue: document.getElementById("delayValue"),
+                exportCode: document.getElementById("exportCode"),
+                importCode: document.getElementById("importCode"),
+                stampText: document.getElementById("stampText"),
+                playToggle: document.getElementById("playToggle"),
+                prevFrame: document.getElementById("prevFrame"),
+                nextFrame: document.getElementById("nextFrame"),
+                addFrame: document.getElementById("addFrame"),
+                duplicateFrame: document.getElementById("duplicateFrame"),
+                deleteFrame: document.getElementById("deleteFrame"),
+                clearFrame: document.getElementById("clearFrame"),
+                invertFrame: document.getElementById("invertFrame"),
+                mirrorFrame: document.getElementById("mirrorFrame"),
+                loadDefault: document.getElementById("loadDefault"),
+                stampButton: document.getElementById("stampButton"),
+                copyCode: document.getElementById("copyCode"),
+                downloadCode: document.getElementById("downloadCode"),
+                importButton: document.getElementById("importButton"),
+            };
 
-      function setStatus(message) {
-        els.status.textContent = message;
-      }
+            let frames = [];
+            let currentFrame = 0;
+            let tool = "draw";
+            let pointerDown = false;
+            let delayMs = DEFAULT_DELAY;
+            let animationId = null;
+            let previewFrameIdx = 0;
+            let lastFrameTime = 0;
+            let accumulatedTime = 0;
 
-      function textWidth(text) {
-        return Array.from(text).reduce((total, char, index) => {
-          const glyph = FONT[char] || FONT[" "];
-          return total + glyph[0].length + (index > 0 ? 1 : 0);
-        }, 0);
-      }
+            function blankFrame() {
+                return Array.from({ length: HEIGHT }, () => new Array(WIDTH).fill(false));
+            }
 
-      function drawText(frame, text, offsetX, offsetY) {
-        let x = offsetX;
-        for (const char of text) {
-          const glyph = FONT[char] || FONT[" "];
-          for (let y = 0; y < glyph.length; y++) {
-            for (let gx = 0; gx < glyph[y].length; gx++) {
-              if (glyph[y][gx] === "1") {
-                const px = x + gx;
-                const py = offsetY + y;
-                if (px >= 0 && px < WIDTH && py >= 0 && py < HEIGHT) {
-                  frame[py][px] = true;
+            function cloneFrame(frame) {
+                return frame.map((row) => row.slice());
+            }
+
+            function setStatus(msg) {
+                els.statusText.textContent = msg;
+            }
+
+            function textWidth(text) {
+                return Array.from(text).reduce((total, ch, i) => {
+                    const glyph = FONT[ch] || FONT[" "];
+                    return total + glyph[0].length + (i > 0 ? 1 : 0);
+                }, 0);
+            }
+
+            function drawText(frame, text, ox, oy) {
+                let x = ox;
+                for (const ch of text) {
+                    const glyph = FONT[ch] || FONT[" "];
+                    for (let y = 0; y < glyph.length; y++) {
+                        for (let gx = 0; gx < glyph[y].length; gx++) {
+                            if (glyph[y][gx] === "1") {
+                                const px = x + gx;
+                                const py = oy + y;
+                                if (px >= 0 && px < WIDTH && py >= 0 && py < HEIGHT) {
+                                    frame[py][px] = true;
+                                }
+                            }
+                        }
+                    }
+                    x += glyph[0].length + 1;
                 }
-              }
             }
-          }
-          x += glyph[0].length + 1;
-        }
-      }
 
-      function createDefaultFrames() {
-        const output = [];
-        const text = "NOUN.WTF";
-        const offsetX = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
-        const scannerStarts = [0, 4, 8, 12, 16, 20, 24, 28];
-
-        for (const start of scannerStarts) {
-          const frame = blankFrame();
-          drawText(frame, text, offsetX, 1);
-          for (let x = start; x < start + 4 && x < WIDTH; x++) {
-            frame[7][x] = true;
-          }
-          output.push(frame);
-        }
-
-        return output;
-      }
-
-      function saveState() {
-        const payload = {
-          frames,
-          currentFrame,
-          delayMs
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      }
-
-      function loadState() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return;
-
-          const payload = JSON.parse(raw);
-          if (!Array.isArray(payload.frames) || payload.frames.length === 0) return;
-
-          frames = payload.frames.map((frame) => {
-            const next = blankFrame();
-            for (let y = 0; y < HEIGHT; y++) {
-              for (let x = 0; x < WIDTH; x++) {
-                next[y][x] = Boolean(frame[y] && frame[y][x]);
-              }
+            function createDefaultFrames() {
+                const out = [];
+                const text = "NOUN.WTF";
+                const ox = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
+                const starts = [0, 4, 8, 12, 16, 20, 24, 28];
+                for (const s of starts) {
+                    const f = blankFrame();
+                    drawText(f, text, ox, 1);
+                    for (let x = s; x < s + 4 && x < WIDTH; x++) f[7][x] = true;
+                    out.push(f);
+                }
+                return out;
             }
-            return next;
-          });
 
-          currentFrame = Math.min(Math.max(0, Number(payload.currentFrame) || 0), frames.length - 1);
-          delayMs = Number(payload.delayMs) || DEFAULT_DELAY;
-        } catch (error) {
-          setStatus("Saved animation ignored");
-        }
-      }
-
-      function renderMatrix() {
-        const frame = frames[currentFrame];
-        els.matrixGrid.replaceChildren();
-
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            const cell = document.createElement("button");
-            cell.type = "button";
-            cell.className = "led-cell" + (frame[y][x] ? " on" : "");
-            cell.dataset.x = String(x);
-            cell.dataset.y = String(y);
-            cell.setAttribute("aria-label", `x ${x + 1}, y ${y + 1}`);
-            els.matrixGrid.appendChild(cell);
-          }
-        }
-      }
-
-      function renderPreview(frame = frames[currentFrame]) {
-        els.previewGrid.replaceChildren();
-
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            const led = document.createElement("span");
-            led.className = "preview-led" + (frame[y][x] ? " on" : "");
-            els.previewGrid.appendChild(led);
-          }
-        }
-      }
-
-      function miniFrame(frame) {
-        const mini = document.createElement("div");
-        mini.className = "mini-grid";
-
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            const led = document.createElement("span");
-            led.className = "mini-led" + (frame[y][x] ? " on" : "");
-            mini.appendChild(led);
-          }
-        }
-
-        return mini;
-      }
-
-      function renderFrameStrip() {
-        els.frameStrip.replaceChildren();
-
-        frames.forEach((frame, index) => {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "frame-tile" + (index === currentFrame ? " active" : "");
-          button.dataset.frame = String(index);
-          button.appendChild(miniFrame(frame));
-
-          const label = document.createElement("span");
-          label.textContent = `#${index + 1}`;
-          button.appendChild(label);
-          els.frameStrip.appendChild(button);
-        });
-
-        els.deleteFrame.disabled = frames.length <= 1;
-      }
-
-      function rowHex(frame, rowIndex) {
-        let value = 0n;
-        for (let x = 0; x < WIDTH; x++) {
-          value = (value << 1n) | BigInt(frame[rowIndex][x] ? 1 : 0);
-        }
-        return `0x${value.toString(16).toUpperCase().padStart(8, "0")}`;
-      }
-
-      function generateHeader() {
-        const lines = [
-          "#ifndef WIFI_ANIMATION_H",
-          "#define WIFI_ANIMATION_H",
-          "",
-          "#include <Arduino.h>",
-          "#include <pgmspace.h>",
-          "",
-          "const uint8_t WIFI_ANIMATION_WIDTH = 32;",
-          "const uint8_t WIFI_ANIMATION_HEIGHT = 8;",
-          `const uint8_t WIFI_ANIMATION_FRAME_COUNT = ${frames.length};`,
-          `const uint16_t WIFI_ANIMATION_FRAME_DELAY_MS = ${delayMs};`,
-          "",
-          "const uint32_t WIFI_ANIMATION_FRAMES[WIFI_ANIMATION_FRAME_COUNT][WIFI_ANIMATION_HEIGHT] PROGMEM = {"
-        ];
-
-        frames.forEach((frame) => {
-          lines.push("  {");
-          for (let y = 0; y < HEIGHT; y++) {
-            lines.push(`    UINT32_C(${rowHex(frame, y)}),`);
-          }
-          lines.push("  },");
-        });
-
-        lines.push("};", "", "#endif");
-        return lines.join("\n");
-      }
-
-      function renderExport() {
-        els.exportCode.value = generateHeader();
-      }
-
-      function renderAll(message) {
-        els.delayRange.value = String(delayMs);
-        els.delayValue.textContent = `${delayMs} ms`;
-        renderMatrix();
-        renderPreview();
-        renderFrameStrip();
-        renderExport();
-        saveState();
-        if (message) setStatus(message);
-      }
-
-      function applyTool(cell) {
-        const x = Number(cell.dataset.x);
-        const y = Number(cell.dataset.y);
-        const frame = frames[currentFrame];
-
-        if (tool === "draw") frame[y][x] = true;
-        if (tool === "erase") frame[y][x] = false;
-        if (tool === "toggle") frame[y][x] = !frame[y][x];
-
-        cell.classList.toggle("on", frame[y][x]);
-        renderPreview();
-        renderFrameStrip();
-        renderExport();
-        saveState();
-      }
-
-      function selectFrame(index) {
-        currentFrame = (index + frames.length) % frames.length;
-        renderAll(`Frame ${currentFrame + 1}`);
-      }
-
-      function addFrame() {
-        frames.splice(currentFrame + 1, 0, blankFrame());
-        currentFrame += 1;
-        renderAll("Frame added");
-      }
-
-      function duplicateFrame() {
-        frames.splice(currentFrame + 1, 0, cloneFrame(frames[currentFrame]));
-        currentFrame += 1;
-        renderAll("Frame duplicated");
-      }
-
-      function deleteFrame() {
-        if (frames.length <= 1) return;
-        frames.splice(currentFrame, 1);
-        currentFrame = Math.min(currentFrame, frames.length - 1);
-        renderAll("Frame deleted");
-      }
-
-      function shiftFrame(dx, dy) {
-        const source = frames[currentFrame];
-        const next = blankFrame();
-
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            const nx = (x + dx + WIDTH) % WIDTH;
-            const ny = (y + dy + HEIGHT) % HEIGHT;
-            next[ny][nx] = source[y][x];
-          }
-        }
-
-        frames[currentFrame] = next;
-        renderAll("Frame moved");
-      }
-
-      function invertFrame() {
-        const frame = frames[currentFrame];
-        for (let y = 0; y < HEIGHT; y++) {
-          for (let x = 0; x < WIDTH; x++) {
-            frame[y][x] = !frame[y][x];
-          }
-        }
-        renderAll("Frame inverted");
-      }
-
-      function clearFrame() {
-        frames[currentFrame] = blankFrame();
-        renderAll("Frame cleared");
-      }
-
-      function mirrorFrame() {
-        frames[currentFrame] = frames[currentFrame].map((row) => row.slice().reverse());
-        renderAll("Frame mirrored");
-      }
-
-      function stampText() {
-        const text = els.stampText.value.toUpperCase();
-        const frame = blankFrame();
-        const offsetX = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
-        drawText(frame, text, offsetX, 1);
-        frames[currentFrame] = frame;
-        renderAll("Text stamped");
-      }
-
-      function loadDefault() {
-        frames = createDefaultFrames();
-        currentFrame = 0;
-        delayMs = DEFAULT_DELAY;
-        stopPlayback();
-        renderAll("Default animation loaded");
-      }
-
-      function startPlayback() {
-        stopPlayback();
-        els.playToggle.textContent = "Stop";
-        let previewIndex = currentFrame;
-        playTimer = window.setInterval(() => {
-          renderPreview(frames[previewIndex]);
-          previewIndex = (previewIndex + 1) % frames.length;
-        }, delayMs);
-      }
-
-      function stopPlayback() {
-        if (playTimer) {
-          window.clearInterval(playTimer);
-          playTimer = null;
-        }
-        els.playToggle.textContent = "Play";
-        renderPreview();
-      }
-
-      async function copyHeader() {
-        const code = els.exportCode.value;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(code);
-        } else {
-          els.exportCode.select();
-          document.execCommand("copy");
-        }
-        setStatus("Header copied");
-      }
-
-      function downloadHeader() {
-        const blob = new Blob([els.exportCode.value], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "wifi_animation.h";
-        link.click();
-        URL.revokeObjectURL(url);
-        setStatus("Header downloaded");
-      }
-
-      function importHeader() {
-        const values = [];
-        const pattern = /UINT32_C\(\s*0x([0-9a-fA-F]{1,8})\s*\)/g;
-        let match;
-
-        while ((match = pattern.exec(els.importCode.value)) !== null) {
-          values.push(BigInt(`0x${match[1]}`));
-        }
-
-        if (values.length === 0 || values.length % HEIGHT !== 0) {
-          setStatus("Import needs complete 8-row frames");
-          return;
-        }
-
-        const imported = [];
-        for (let i = 0; i < values.length; i += HEIGHT) {
-          const frame = blankFrame();
-          for (let y = 0; y < HEIGHT; y++) {
-            const row = values[i + y];
-            for (let x = 0; x < WIDTH; x++) {
-              const bit = BigInt(WIDTH - 1 - x);
-              frame[y][x] = Boolean(row & (1n << bit));
+            function saveState() {
+                try {
+                    const payload = { frames, currentFrame, delayMs };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+                } catch {
+                    // silently ignore
+                }
             }
-          }
-          imported.push(frame);
-        }
 
-        frames = imported;
-        currentFrame = 0;
-        stopPlayback();
-        renderAll(`${frames.length} frame import`);
-      }
+            function loadState() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return false;
+                    const payload = JSON.parse(raw);
+                    if (!Array.isArray(payload.frames) || payload.frames.length === 0) return false;
+                    frames = payload.frames.map((f) => {
+                        const next = blankFrame();
+                        for (let y = 0; y < HEIGHT; y++)
+                            for (let x = 0; x < WIDTH; x++)
+                                next[y][x] = Boolean(f[y] && f[y][x]);
+                        return next;
+                    });
+                    currentFrame = Math.min(Math.max(0, Number(payload.currentFrame) || 0), frames.length - 1);
+                    delayMs = Number(payload.delayMs) || DEFAULT_DELAY;
+                    return true;
+                } catch {
+                    return false;
+                }
+            }
 
-      function bindEvents() {
-        els.toolButtons.addEventListener("click", (event) => {
-          const button = event.target.closest("button[data-tool]");
-          if (!button) return;
-          tool = button.dataset.tool;
-          els.toolButtons.querySelectorAll("button").forEach((item) => {
-            item.classList.toggle("active", item === button);
-          });
-        });
+            function renderMatrix() {
+                const frame = frames[currentFrame];
+                const frag = document.createDocumentFragment();
+                for (let y = 0; y < HEIGHT; y++) {
+                    for (let x = 0; x < WIDTH; x++) {
+                        const cell = document.createElement("button");
+                        cell.type = "button";
+                        cell.className = "led-cell" + (frame[y][x] ? " on" : "");
+                        cell.dataset.x = String(x);
+                        cell.dataset.y = String(y);
+                        cell.setAttribute("aria-label", `Row ${y + 1}, Col ${x + 1}${frame[y][x] ? " (on)" : " (off)"}`);
+                        cell.setAttribute("role", "gridcell");
+                        frag.appendChild(cell);
+                    }
+                }
+                els.matrixGrid.replaceChildren(frag);
+            }
 
-        els.matrixGrid.addEventListener("pointerdown", (event) => {
-          const cell = event.target.closest(".led-cell");
-          if (!cell) return;
-          pointerDown = true;
-          event.preventDefault();
-          applyTool(cell);
-        });
+            function renderPreview(frame) {
+                const f = frame || frames[currentFrame];
+                const frag = document.createDocumentFragment();
+                for (let y = 0; y < HEIGHT; y++) {
+                    for (let x = 0; x < WIDTH; x++) {
+                        const led = document.createElement("span");
+                        led.className = "preview-led" + (f[y][x] ? " on" : "");
+                        frag.appendChild(led);
+                    }
+                }
+                els.previewGrid.replaceChildren(frag);
+            }
 
-        els.matrixGrid.addEventListener("pointerover", (event) => {
-          if (!pointerDown) return;
-          const cell = event.target.closest(".led-cell");
-          if (cell) applyTool(cell);
-        });
+            function miniFrameElement(frame) {
+                const div = document.createElement("div");
+                div.className = "mini-grid";
+                for (let y = 0; y < HEIGHT; y++)
+                    for (let x = 0; x < WIDTH; x++) {
+                        const led = document.createElement("span");
+                        led.className = "mini-led" + (frame[y][x] ? " on" : "");
+                        div.appendChild(led);
+                    }
+                return div;
+            }
 
-        window.addEventListener("pointerup", () => {
-          pointerDown = false;
-        });
+            function renderFrameStrip() {
+                const frag = document.createDocumentFragment();
+                frames.forEach((frame, i) => {
+                    const btn = document.createElement("button");
+                    btn.type = "button";
+                    btn.className = "frame-tile" + (i === currentFrame ? " active" : "");
+                    btn.dataset.frame = String(i);
+                    btn.setAttribute("role", "option");
+                    btn.setAttribute("aria-selected", String(i === currentFrame));
+                    btn.appendChild(miniFrameElement(frame));
+                    const label = document.createElement("span");
+                    label.textContent = `#${i + 1}`;
+                    btn.appendChild(label);
+                    frag.appendChild(btn);
+                });
+                els.frameStrip.replaceChildren(frag);
+                els.deleteFrame.disabled = frames.length <= 1;
 
-        els.frameStrip.addEventListener("click", (event) => {
-          const button = event.target.closest("button[data-frame]");
-          if (button) selectFrame(Number(button.dataset.frame));
-        });
+                const activeTile = els.frameStrip.querySelector(".frame-tile.active");
+                if (activeTile) {
+                    activeTile.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }
+            }
 
-        els.delayRange.addEventListener("input", () => {
-          delayMs = Number(els.delayRange.value);
-          els.delayValue.textContent = `${delayMs} ms`;
-          renderExport();
-          saveState();
-          if (playTimer) startPlayback();
-        });
+            function rowHex(frame, rowIdx) {
+                let val = 0;
+                for (let x = 0; x < WIDTH; x++) {
+                    val = (val << 1) | (frame[rowIdx][x] ? 1 : 0);
+                }
+                return "0x" + (val >>> 0).toString(16).toUpperCase().padStart(8, "0");
+            }
 
-        els.playToggle.addEventListener("click", () => {
-          if (playTimer) {
-            stopPlayback();
-          } else {
-            startPlayback();
-          }
-        });
+            function generateHeader() {
+                const lines = [
+                    "#ifndef WIFI_ANIMATION_H",
+                    "#define WIFI_ANIMATION_H",
+                    "",
+                    "#include <Arduino.h>",
+                    "#include <pgmspace.h>",
+                    "",
+                    "const uint8_t WIFI_ANIMATION_WIDTH = 32;",
+                    "const uint8_t WIFI_ANIMATION_HEIGHT = 8;",
+                    `const uint8_t WIFI_ANIMATION_FRAME_COUNT = ${frames.length};`,
+                    `const uint16_t WIFI_ANIMATION_FRAME_DELAY_MS = ${delayMs};`,
+                    "",
+                    "const uint32_t WIFI_ANIMATION_FRAMES[WIFI_ANIMATION_FRAME_COUNT][WIFI_ANIMATION_HEIGHT] PROGMEM = {",
+                ];
+                frames.forEach((frame) => {
+                    lines.push("  {");
+                    for (let y = 0; y < HEIGHT; y++) {
+                        lines.push(`    UINT32_C(${rowHex(frame, y)}),`);
+                    }
+                    lines.push("  },");
+                });
+                lines.push("};", "", "#endif");
+                return lines.join("\n");
+            }
 
-        els.prevFrame.addEventListener("click", () => selectFrame(currentFrame - 1));
-        els.nextFrame.addEventListener("click", () => selectFrame(currentFrame + 1));
-        els.addFrame.addEventListener("click", addFrame);
-        els.duplicateFrame.addEventListener("click", duplicateFrame);
-        els.deleteFrame.addEventListener("click", deleteFrame);
-        els.clearFrame.addEventListener("click", clearFrame);
-        els.invertFrame.addEventListener("click", invertFrame);
-        els.mirrorFrame.addEventListener("click", mirrorFrame);
-        els.loadDefault.addEventListener("click", loadDefault);
-        els.stampButton.addEventListener("click", stampText);
-        els.copyCode.addEventListener("click", () => copyHeader().catch(() => setStatus("Copy failed")));
-        els.downloadCode.addEventListener("click", downloadHeader);
-        els.importButton.addEventListener("click", importHeader);
+            function renderExport() {
+                els.exportCode.value = generateHeader();
+            }
 
-        document.querySelectorAll("[data-shift]").forEach((button) => {
-          button.addEventListener("click", () => {
-            const [dx, dy] = button.dataset.shift.split(",").map(Number);
-            shiftFrame(dx, dy);
-          });
-        });
-      }
+            function renderAll(message) {
+                els.delayRange.value = String(delayMs);
+                els.delayValue.textContent = `${delayMs} ms`;
+                renderMatrix();
+                renderPreview();
+                renderFrameStrip();
+                renderExport();
+                saveState();
+                if (message) setStatus(message);
+            }
 
-      loadState();
-      bindEvents();
-      renderAll("Ready");
-    })();
-  </script>
+            function applyToolToCell(cell) {
+                const x = Number(cell.dataset.x);
+                const y = Number(cell.dataset.y);
+                const frame = frames[currentFrame];
+                if (tool === "draw") frame[y][x] = true;
+                else if (tool === "erase") frame[y][x] = false;
+                else frame[y][x] = !frame[y][x];
+                cell.classList.toggle("on", frame[y][x]);
+                renderPreview();
+                renderFrameStrip();
+                renderExport();
+                saveState();
+            }
+
+            function selectFrame(index) {
+                currentFrame = ((index % frames.length) + frames.length) % frames.length;
+                stopPlayback();
+                renderAll(`Frame ${currentFrame + 1} of ${frames.length}`);
+            }
+
+            function addFrame() {
+                frames.splice(currentFrame + 1, 0, blankFrame());
+                currentFrame++;
+                renderAll("Frame added");
+            }
+
+            function duplicateFrame() {
+                frames.splice(currentFrame + 1, 0, cloneFrame(frames[currentFrame]));
+                currentFrame++;
+                renderAll("Frame duplicated");
+            }
+
+            function deleteFrame() {
+                if (frames.length <= 1) return;
+                frames.splice(currentFrame, 1);
+                if (currentFrame >= frames.length) currentFrame = frames.length - 1;
+                renderAll("Frame deleted");
+            }
+
+            function shiftFrame(dx, dy) {
+                const src = frames[currentFrame];
+                const next = blankFrame();
+                for (let y = 0; y < HEIGHT; y++) {
+                    for (let x = 0; x < WIDTH; x++) {
+                        const nx = (x + dx + WIDTH) % WIDTH;
+                        const ny = (y + dy + HEIGHT) % HEIGHT;
+                        next[ny][nx] = src[y][x];
+                    }
+                }
+                frames[currentFrame] = next;
+                renderAll(`Frame shifted ${dx !== 0 ? (dx > 0 ? "right" : "left") : ""}${dx !== 0 && dy !== 0 ? " & " : ""}${dy !== 0 ? (dy > 0 ? "down" : "up") : ""}`);
+            }
+
+            function invertFrame() {
+                const frame = frames[currentFrame];
+                for (let y = 0; y < HEIGHT; y++)
+                    for (let x = 0; x < WIDTH; x++)
+                        frame[y][x] = !frame[y][x];
+                renderAll("Frame inverted");
+            }
+
+            function clearFrame() {
+                frames[currentFrame] = blankFrame();
+                renderAll("Frame cleared");
+            }
+
+            function mirrorFrame() {
+                frames[currentFrame] = frames[currentFrame].map((row) => row.slice().reverse());
+                renderAll("Frame mirrored");
+            }
+
+            function stampText() {
+                const text = els.stampText.value.toUpperCase();
+                if (!text) {
+                    setStatus("No text to stamp");
+                    return;
+                }
+                const frame = blankFrame();
+                const ox = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
+                drawText(frame, text, ox, 1);
+                frames[currentFrame] = frame;
+                renderAll(`"${text}" stamped`);
+            }
+
+            function loadDefault() {
+                frames = createDefaultFrames();
+                currentFrame = 0;
+                delayMs = DEFAULT_DELAY;
+                stopPlayback();
+                renderAll("Default animation loaded");
+            }
+
+            function startPlayback() {
+                stopPlayback();
+                els.playToggle.textContent = "⏸ Stop";
+                els.playToggle.classList.add("active");
+                previewFrameIdx = currentFrame;
+                lastFrameTime = 0;
+                accumulatedTime = 0;
+                animationId = requestAnimationFrame(playbackLoop);
+            }
+
+            function playbackLoop(timestamp) {
+                if (lastFrameTime === 0) lastFrameTime = timestamp;
+                const delta = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
+                accumulatedTime += delta;
+
+                while (accumulatedTime >= delayMs) {
+                    accumulatedTime -= delayMs;
+                    previewFrameIdx = (previewFrameIdx + 1) % frames.length;
+                }
+                renderPreview(frames[previewFrameIdx]);
+                animationId = requestAnimationFrame(playbackLoop);
+            }
+
+            function stopPlayback() {
+                if (animationId !== null) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                lastFrameTime = 0;
+                accumulatedTime = 0;
+                els.playToggle.textContent = "▶ Play";
+                els.playToggle.classList.remove("active");
+                renderPreview();
+            }
+
+            async function copyHeader() {
+                const code = els.exportCode.value;
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(code);
+                    } else {
+                        els.exportCode.select();
+                        document.execCommand("copy");
+                    }
+                    setStatus("Header copied to clipboard");
+                } catch {
+                    setStatus("Copy failed — select & copy manually");
+                }
+            }
+
+            function downloadHeader() {
+                const blob = new Blob([els.exportCode.value], { type: "text/plain;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "wifi_animation.h";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                setStatus("Header downloaded");
+            }
+
+            function importHeader() {
+                const raw = els.importCode.value;
+                const pattern = /UINT32_C\(\s*0x([0-9a-fA-F]{1,8})\s*\)/g;
+                const values = [];
+                let match;
+                while ((match = pattern.exec(raw)) !== null) {
+                    values.push(parseInt(match[1], 16));
+                }
+                if (values.length === 0 || values.length % HEIGHT !== 0) {
+                    setStatus("Import error: need complete 8-row frames");
+                    return;
+                }
+                const imported = [];
+                for (let i = 0; i < values.length; i += HEIGHT) {
+                    const frame = blankFrame();
+                    for (let y = 0; y < HEIGHT; y++) {
+                        const row = values[i + y];
+                        for (let x = 0; x < WIDTH; x++) {
+                            frame[y][x] = Boolean((row >>> (WIDTH - 1 - x)) & 1);
+                        }
+                    }
+                    imported.push(frame);
+                }
+                frames = imported;
+                currentFrame = 0;
+                stopPlayback();
+                renderAll(`Imported ${frames.length} frame${frames.length !== 1 ? "s" : ""}`);
+                els.importCode.value = "";
+            }
+
+            function setTool(newTool) {
+                tool = newTool;
+                els.toolButtons.querySelectorAll("button").forEach((btn) => {
+                    const match = btn.dataset.tool === tool;
+                    btn.classList.toggle("active", match);
+                    btn.setAttribute("aria-checked", String(match));
+                });
+            }
+
+            function bindEvents() {
+                els.toolButtons.addEventListener("click", (e) => {
+                    const btn = e.target.closest("button[data-tool]");
+                    if (!btn) return;
+                    setTool(btn.dataset.tool);
+                });
+
+                els.matrixGrid.addEventListener("pointerdown", (e) => {
+                    const cell = e.target.closest(".led-cell");
+                    if (!cell) return;
+                    pointerDown = true;
+                    e.preventDefault();
+                    applyToolToCell(cell);
+                });
+                els.matrixGrid.addEventListener("pointerover", (e) => {
+                    if (!pointerDown) return;
+                    const cell = e.target.closest(".led-cell");
+                    if (cell) applyToolToCell(cell);
+                });
+                window.addEventListener("pointerup", () => { pointerDown = false; });
+                window.addEventListener("pointerleave", () => { pointerDown = false; });
+
+                els.frameStrip.addEventListener("click", (e) => {
+                    const btn = e.target.closest("button[data-frame]");
+                    if (btn) selectFrame(Number(btn.dataset.frame));
+                });
+
+                els.delayRange.addEventListener("input", () => {
+                    delayMs = Number(els.delayRange.value);
+                    els.delayValue.textContent = `${delayMs} ms`;
+                    renderExport();
+                    saveState();
+                    if (animationId !== null) {
+                        accumulatedTime = 0;
+                        lastFrameTime = 0;
+                    }
+                });
+
+                els.playToggle.addEventListener("click", () => {
+                    animationId !== null ? stopPlayback() : startPlayback();
+                });
+                els.prevFrame.addEventListener("click", () => selectFrame(currentFrame - 1));
+                els.nextFrame.addEventListener("click", () => selectFrame(currentFrame + 1));
+                els.addFrame.addEventListener("click", addFrame);
+                els.duplicateFrame.addEventListener("click", duplicateFrame);
+                els.deleteFrame.addEventListener("click", deleteFrame);
+                els.clearFrame.addEventListener("click", clearFrame);
+                els.invertFrame.addEventListener("click", invertFrame);
+                els.mirrorFrame.addEventListener("click", mirrorFrame);
+                els.loadDefault.addEventListener("click", loadDefault);
+                els.stampButton.addEventListener("click", stampText);
+                els.copyCode.addEventListener("click", () => copyHeader().catch(() => setStatus("Copy failed")));
+                els.downloadCode.addEventListener("click", downloadHeader);
+                els.importButton.addEventListener("click", importHeader);
+
+                document.querySelectorAll("[data-shift]").forEach((btn) => {
+                    btn.addEventListener("click", () => {
+                        const [dx, dy] = btn.dataset.shift.split(",").map(Number);
+                        shiftFrame(dx, dy);
+                    });
+                });
+
+                document.addEventListener("keydown", (e) => {
+                    const tag = document.activeElement?.tagName;
+                    const isInput = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
+                    if (isInput) return;
+
+                    switch (e.key.toLowerCase()) {
+                        case "d":
+                            setTool("draw");
+                            break;
+                        case "e":
+                            setTool("erase");
+                            break;
+                        case "t":
+                            setTool("toggle");
+                            break;
+                        case "[":
+                            e.preventDefault();
+                            selectFrame(currentFrame - 1);
+                            break;
+                        case "]":
+                            e.preventDefault();
+                            selectFrame(currentFrame + 1);
+                            break;
+                        case " ":
+                            e.preventDefault();
+                            animationId !== null ? stopPlayback() : startPlayback();
+                            break;
+                        case "escape":
+                            stopPlayback();
+                            break;
+                        case "arrowleft":
+                            shiftFrame(-1, 0);
+                            break;
+                        case "arrowright":
+                            shiftFrame(1, 0);
+                            break;
+                        case "arrowup":
+                            shiftFrame(0, -1);
+                            break;
+                        case "arrowdown":
+                            shiftFrame(0, 1);
+                            break;
+                        default:
+                            break;
+                    }
+                });
+            }
+
+            // Initialize
+            if (!loadState()) {
+                frames = createDefaultFrames();
+                currentFrame = 0;
+                delayMs = DEFAULT_DELAY;
+            }
+            bindEvents();
+            renderAll("Ready — draw on the matrix or press Play");
+        })();
+    </script>
 </body>
 </html>
