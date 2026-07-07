@@ -220,6 +220,124 @@
             }
         }
 
+        .shortcut-btn {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ink-muted);
+            transition: all var(--transition-fast);
+        }
+        .shortcut-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent-soft);
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+            transform: scale(1.05);
+        }
+
+        .shortcut-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+        .shortcut-modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .shortcut-modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 360px;
+            width: 90%;
+            padding: 20px 24px;
+            transform: translateY(20px);
+            transition: transform 0.2s ease;
+        }
+        .shortcut-modal-overlay.open .shortcut-modal {
+            transform: translateY(0);
+        }
+
+        .shortcut-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .shortcut-modal-header h2 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--ink-muted);
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+        .close-btn:hover {
+            background: var(--surface-hover);
+            color: var(--ink);
+        }
+
+        .shortcut-list {
+            display: grid;
+            gap: 10px;
+        }
+        .shortcut-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        .shortcut-row:last-child {
+            border-bottom: none;
+        }
+        .shortcut-row kbd {
+            font-family: var(--font-mono);
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            color: var(--ink-secondary);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+            min-width: 28px;
+            text-align: center;
+        }
+        .shortcut-row span {
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 500;
+        }
+
         .layout {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 400px;
@@ -365,7 +483,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius-md);
             background: #fafbfc;
-            overflow-x: auto;          /* allow scrolling when preview wider than container */
+            overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
         .playback {
@@ -380,12 +498,11 @@
             grid-template-columns: repeat(32, var(--pc));
             grid-template-rows: repeat(8, var(--pc));
             gap: 2px;
-            width: max-content;        /* natural width, never clips */
+            width: max-content;
             padding: 10px;
             border-radius: var(--radius-sm);
             background: var(--matrix-bg);
             box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.3);
-            /* overflow removed – parent handles scroll */
         }
         .preview-led {
             width: var(--pc);
@@ -431,7 +548,7 @@
 
         .frame-strip {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));  /* wide enough for mini-grid ~95px */
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
             gap: 8px;
             max-height: 240px;
             overflow-y: auto;
@@ -452,7 +569,7 @@
             font-size: 11px;
             font-weight: 500;
             color: var(--ink-muted);
-            overflow: hidden;            /* safe overflow guard */
+            overflow: hidden;
         }
         .frame-tile:hover {
             border-color: #c4b5fd;
@@ -579,11 +696,40 @@
             <h1>NOUN.WTF MAX7219 Animator</h1>
             <p class="subtitle">32 × 8 frames for ESP8266 + four chained MAX7219 modules</p>
         </div>
-        <div class="status-pill" id="statusPill">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span id="statusText">Ready</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <button type="button" id="shortcutBtn" class="shortcut-btn" aria-label="Keyboard shortcuts" title="Keyboard Shortcuts">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/></svg>
+            </button>
+            <div class="status-pill" id="statusPill">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span id="statusText">Ready</span>
+            </div>
         </div>
     </header>
+
+    <!-- Shortcuts Modal -->
+    <div class="shortcut-modal-overlay" id="shortcutModal" role="dialog" aria-modal="true" aria-labelledby="shortcutTitle" hidden>
+        <div class="shortcut-modal">
+            <div class="shortcut-modal-header">
+                <h2 id="shortcutTitle">Keyboard Shortcuts</h2>
+                <button type="button" id="closeShortcutModal" class="close-btn" aria-label="Close shortcuts">&times;</button>
+            </div>
+            <div class="shortcut-list">
+                <div class="shortcut-row"><kbd>D</kbd><span>Draw tool</span></div>
+                <div class="shortcut-row"><kbd>E</kbd><span>Erase tool</span></div>
+                <div class="shortcut-row"><kbd>T</kbd><span>Toggle tool</span></div>
+                <div class="shortcut-row"><kbd>[</kbd><span>Previous frame</span></div>
+                <div class="shortcut-row"><kbd>]</kbd><span>Next frame</span></div>
+                <div class="shortcut-row"><kbd>X</kbd><span>Duplicate frame</span></div>
+                <div class="shortcut-row"><kbd>Space</kbd><span>Play / Stop</span></div>
+                <div class="shortcut-row"><kbd>Esc</kbd><span>Stop playback</span></div>
+                <div class="shortcut-row"><kbd>←</kbd><span>Shift frame left</span></div>
+                <div class="shortcut-row"><kbd>→</kbd><span>Shift frame right</span></div>
+                <div class="shortcut-row"><kbd>↑</kbd><span>Shift frame up</span></div>
+                <div class="shortcut-row"><kbd>↓</kbd><span>Shift frame down</span></div>
+            </div>
+        </div>
+    </div>
 
     <main class="layout">
         <section class="workspace" aria-labelledby="editor-title">
@@ -630,7 +776,7 @@
                 <div class="section-title">Frames <span class="kbd-hint">[ ]</span></div>
                 <div class="frame-actions" style="display:flex;flex-wrap:wrap;gap:7px;">
                     <button type="button" id="addFrame">+ Add</button>
-                    <button type="button" id="duplicateFrame">Duplicate</button>
+                    <button type="button" id="duplicateFrame">Duplicate <span class="kbd-hint">X</span></button>
                     <button type="button" id="deleteFrame" class="danger">Delete</button>
                 </div>
                 <div class="frame-strip" id="frameStrip" role="listbox" aria-label="Frame thumbnails"></div>
@@ -749,6 +895,9 @@
                 copyCode: document.getElementById("copyCode"),
                 downloadCode: document.getElementById("downloadCode"),
                 importButton: document.getElementById("importButton"),
+                shortcutBtn: document.getElementById("shortcutBtn"),
+                shortcutModal: document.getElementById("shortcutModal"),
+                closeShortcutModal: document.getElementById("closeShortcutModal"),
             };
 
             let frames = [];
@@ -764,22 +913,18 @@
             function blankFrame() {
                 return Array.from({ length: HEIGHT }, () => new Array(WIDTH).fill(false));
             }
-
             function cloneFrame(frame) {
                 return frame.map((row) => row.slice());
             }
-
             function setStatus(msg) {
                 els.statusText.textContent = msg;
             }
-
             function textWidth(text) {
                 return Array.from(text).reduce((total, ch, i) => {
                     const glyph = FONT[ch] || FONT[" "];
                     return total + glyph[0].length + (i > 0 ? 1 : 0);
                 }, 0);
             }
-
             function drawText(frame, text, ox, oy) {
                 let x = ox;
                 for (const ch of text) {
@@ -798,7 +943,6 @@
                     x += glyph[0].length + 1;
                 }
             }
-
             function createDefaultFrames() {
                 const out = [];
                 const text = "NOUN.WTF";
@@ -812,16 +956,12 @@
                 }
                 return out;
             }
-
             function saveState() {
                 try {
                     const payload = { frames, currentFrame, delayMs };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-                } catch {
-                    // silently ignore
-                }
+                } catch {}
             }
-
             function loadState() {
                 try {
                     const raw = localStorage.getItem(STORAGE_KEY);
@@ -842,7 +982,6 @@
                     return false;
                 }
             }
-
             function renderMatrix() {
                 const frame = frames[currentFrame];
                 const frag = document.createDocumentFragment();
@@ -860,7 +999,6 @@
                 }
                 els.matrixGrid.replaceChildren(frag);
             }
-
             function renderPreview(frame) {
                 const f = frame || frames[currentFrame];
                 const frag = document.createDocumentFragment();
@@ -873,7 +1011,6 @@
                 }
                 els.previewGrid.replaceChildren(frag);
             }
-
             function miniFrameElement(frame) {
                 const div = document.createElement("div");
                 div.className = "mini-grid";
@@ -885,7 +1022,6 @@
                     }
                 return div;
             }
-
             function renderFrameStrip() {
                 const frag = document.createDocumentFragment();
                 frames.forEach((frame, i) => {
@@ -903,21 +1039,14 @@
                 });
                 els.frameStrip.replaceChildren(frag);
                 els.deleteFrame.disabled = frames.length <= 1;
-
                 const activeTile = els.frameStrip.querySelector(".frame-tile.active");
-                if (activeTile) {
-                    activeTile.scrollIntoView({ block: "nearest", behavior: "smooth" });
-                }
+                if (activeTile) activeTile.scrollIntoView({ block: "nearest", behavior: "smooth" });
             }
-
             function rowHex(frame, rowIdx) {
                 let val = 0;
-                for (let x = 0; x < WIDTH; x++) {
-                    val = (val << 1) | (frame[rowIdx][x] ? 1 : 0);
-                }
+                for (let x = 0; x < WIDTH; x++) val = (val << 1) | (frame[rowIdx][x] ? 1 : 0);
                 return "0x" + (val >>> 0).toString(16).toUpperCase().padStart(8, "0");
             }
-
             function generateHeader() {
                 const lines = [
                     "#ifndef WIFI_ANIMATION_H",
@@ -935,19 +1064,15 @@
                 ];
                 frames.forEach((frame) => {
                     lines.push("  {");
-                    for (let y = 0; y < HEIGHT; y++) {
-                        lines.push(`    UINT32_C(${rowHex(frame, y)}),`);
-                    }
+                    for (let y = 0; y < HEIGHT; y++) lines.push(`    UINT32_C(${rowHex(frame, y)}),`);
                     lines.push("  },");
                 });
                 lines.push("};", "", "#endif");
                 return lines.join("\n");
             }
-
             function renderExport() {
                 els.exportCode.value = generateHeader();
             }
-
             function renderAll(message) {
                 els.delayRange.value = String(delayMs);
                 els.delayValue.textContent = `${delayMs} ms`;
@@ -958,7 +1083,6 @@
                 saveState();
                 if (message) setStatus(message);
             }
-
             function applyToolToCell(cell) {
                 const x = Number(cell.dataset.x);
                 const y = Number(cell.dataset.y);
@@ -972,77 +1096,45 @@
                 renderExport();
                 saveState();
             }
-
             function selectFrame(index) {
                 currentFrame = ((index % frames.length) + frames.length) % frames.length;
                 stopPlayback();
                 renderAll(`Frame ${currentFrame + 1} of ${frames.length}`);
             }
-
-            function addFrame() {
-                frames.splice(currentFrame + 1, 0, blankFrame());
-                currentFrame++;
-                renderAll("Frame added");
-            }
-
-            function duplicateFrame() {
-                frames.splice(currentFrame + 1, 0, cloneFrame(frames[currentFrame]));
-                currentFrame++;
-                renderAll("Frame duplicated");
-            }
-
+            function addFrame() { frames.splice(currentFrame + 1, 0, blankFrame()); currentFrame++; renderAll("Frame added"); }
+            function duplicateFrameAction() { frames.splice(currentFrame + 1, 0, cloneFrame(frames[currentFrame])); currentFrame++; renderAll("Frame duplicated"); }
             function deleteFrame() {
                 if (frames.length <= 1) return;
                 frames.splice(currentFrame, 1);
                 if (currentFrame >= frames.length) currentFrame = frames.length - 1;
                 renderAll("Frame deleted");
             }
-
             function shiftFrame(dx, dy) {
                 const src = frames[currentFrame];
                 const next = blankFrame();
                 for (let y = 0; y < HEIGHT; y++) {
                     for (let x = 0; x < WIDTH; x++) {
-                        const nx = (x + dx + WIDTH) % WIDTH;
-                        const ny = (y + dy + HEIGHT) % HEIGHT;
-                        next[ny][nx] = src[y][x];
+                        next[(y + dy + HEIGHT) % HEIGHT][(x + dx + WIDTH) % WIDTH] = src[y][x];
                     }
                 }
                 frames[currentFrame] = next;
-                renderAll(`Frame shifted ${dx !== 0 ? (dx > 0 ? "right" : "left") : ""}${dx !== 0 && dy !== 0 ? " & " : ""}${dy !== 0 ? (dy > 0 ? "down" : "up") : ""}`);
+                renderAll("Frame shifted");
             }
-
             function invertFrame() {
                 const frame = frames[currentFrame];
-                for (let y = 0; y < HEIGHT; y++)
-                    for (let x = 0; x < WIDTH; x++)
-                        frame[y][x] = !frame[y][x];
+                for (let y = 0; y < HEIGHT; y++) for (let x = 0; x < WIDTH; x++) frame[y][x] = !frame[y][x];
                 renderAll("Frame inverted");
             }
-
-            function clearFrame() {
-                frames[currentFrame] = blankFrame();
-                renderAll("Frame cleared");
-            }
-
-            function mirrorFrame() {
-                frames[currentFrame] = frames[currentFrame].map((row) => row.slice().reverse());
-                renderAll("Frame mirrored");
-            }
-
+            function clearFrame() { frames[currentFrame] = blankFrame(); renderAll("Frame cleared"); }
+            function mirrorFrame() { frames[currentFrame] = frames[currentFrame].map(row => row.slice().reverse()); renderAll("Frame mirrored"); }
             function stampText() {
                 const text = els.stampText.value.toUpperCase();
-                if (!text) {
-                    setStatus("No text to stamp");
-                    return;
-                }
+                if (!text) { setStatus("No text to stamp"); return; }
                 const frame = blankFrame();
-                const ox = Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2));
-                drawText(frame, text, ox, 1);
+                drawText(frame, text, Math.max(0, Math.floor((WIDTH - textWidth(text)) / 2)), 1);
                 frames[currentFrame] = frame;
                 renderAll(`"${text}" stamped`);
             }
-
             function loadDefault() {
                 frames = createDefaultFrames();
                 currentFrame = 0;
@@ -1050,7 +1142,6 @@
                 stopPlayback();
                 renderAll("Default animation loaded");
             }
-
             function startPlayback() {
                 stopPlayback();
                 els.playToggle.textContent = "⏸ Stop";
@@ -1060,13 +1151,11 @@
                 accumulatedTime = 0;
                 animationId = requestAnimationFrame(playbackLoop);
             }
-
             function playbackLoop(timestamp) {
                 if (lastFrameTime === 0) lastFrameTime = timestamp;
                 const delta = timestamp - lastFrameTime;
                 lastFrameTime = timestamp;
                 accumulatedTime += delta;
-
                 while (accumulatedTime >= delayMs) {
                     accumulatedTime -= delayMs;
                     previewFrameIdx = (previewFrameIdx + 1) % frames.length;
@@ -1074,7 +1163,6 @@
                 renderPreview(frames[previewFrameIdx]);
                 animationId = requestAnimationFrame(playbackLoop);
             }
-
             function stopPlayback() {
                 if (animationId !== null) {
                     cancelAnimationFrame(animationId);
@@ -1086,81 +1174,80 @@
                 els.playToggle.classList.remove("active");
                 renderPreview();
             }
-
             async function copyHeader() {
                 const code = els.exportCode.value;
                 try {
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
-                        await navigator.clipboard.writeText(code);
-                    } else {
-                        els.exportCode.select();
-                        document.execCommand("copy");
-                    }
+                    if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(code);
+                    else { els.exportCode.select(); document.execCommand("copy"); }
                     setStatus("Header copied to clipboard");
-                } catch {
-                    setStatus("Copy failed — select & copy manually");
-                }
+                } catch { setStatus("Copy failed — select & copy manually"); }
             }
-
             function downloadHeader() {
                 const blob = new Blob([els.exportCode.value], { type: "text/plain;charset=utf-8" });
                 const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "wifi_animation.h";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                const a = document.createElement("a");
+                a.href = url; a.download = "wifi_animation.h";
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 setStatus("Header downloaded");
             }
-
             function importHeader() {
                 const raw = els.importCode.value;
                 const pattern = /UINT32_C\(\s*0x([0-9a-fA-F]{1,8})\s*\)/g;
                 const values = [];
                 let match;
-                while ((match = pattern.exec(raw)) !== null) {
-                    values.push(parseInt(match[1], 16));
-                }
-                if (values.length === 0 || values.length % HEIGHT !== 0) {
-                    setStatus("Import error: need complete 8-row frames");
-                    return;
-                }
+                while ((match = pattern.exec(raw)) !== null) values.push(parseInt(match[1], 16));
+                if (values.length === 0 || values.length % HEIGHT !== 0) { setStatus("Import error: need complete 8-row frames"); return; }
                 const imported = [];
                 for (let i = 0; i < values.length; i += HEIGHT) {
                     const frame = blankFrame();
                     for (let y = 0; y < HEIGHT; y++) {
                         const row = values[i + y];
-                        for (let x = 0; x < WIDTH; x++) {
-                            frame[y][x] = Boolean((row >>> (WIDTH - 1 - x)) & 1);
-                        }
+                        for (let x = 0; x < WIDTH; x++) frame[y][x] = Boolean((row >>> (WIDTH - 1 - x)) & 1);
                     }
                     imported.push(frame);
                 }
-                frames = imported;
-                currentFrame = 0;
-                stopPlayback();
+                frames = imported; currentFrame = 0; stopPlayback();
                 renderAll(`Imported ${frames.length} frame${frames.length !== 1 ? "s" : ""}`);
                 els.importCode.value = "";
             }
-
             function setTool(newTool) {
                 tool = newTool;
-                els.toolButtons.querySelectorAll("button").forEach((btn) => {
+                els.toolButtons.querySelectorAll("button").forEach(btn => {
                     const match = btn.dataset.tool === tool;
                     btn.classList.toggle("active", match);
                     btn.setAttribute("aria-checked", String(match));
                 });
             }
 
+            // Shortcut modal logic
+            function openShortcutModal() {
+                els.shortcutModal.hidden = false;
+                els.shortcutModal.classList.add("open");
+                els.closeShortcutModal.focus();
+            }
+            function closeShortcutModal() {
+                els.shortcutModal.classList.remove("open");
+                setTimeout(() => { els.shortcutModal.hidden = true; }, 200);
+                els.shortcutBtn.focus();
+            }
+
             function bindEvents() {
+                els.shortcutBtn.addEventListener("click", openShortcutModal);
+                els.closeShortcutModal.addEventListener("click", closeShortcutModal);
+                els.shortcutModal.addEventListener("click", (e) => { if (e.target === els.shortcutModal) closeShortcutModal(); });
+                document.addEventListener("keydown", (e) => {
+                    if (e.key === "Escape" && !els.shortcutModal.hidden && els.shortcutModal.classList.contains("open")) {
+                        closeShortcutModal();
+                        e.stopPropagation();
+                    }
+                });
+
                 els.toolButtons.addEventListener("click", (e) => {
                     const btn = e.target.closest("button[data-tool]");
                     if (!btn) return;
                     setTool(btn.dataset.tool);
                 });
-
                 els.matrixGrid.addEventListener("pointerdown", (e) => {
                     const cell = e.target.closest(".led-cell");
                     if (!cell) return;
@@ -1175,30 +1262,22 @@
                 });
                 window.addEventListener("pointerup", () => { pointerDown = false; });
                 window.addEventListener("pointerleave", () => { pointerDown = false; });
-
                 els.frameStrip.addEventListener("click", (e) => {
                     const btn = e.target.closest("button[data-frame]");
                     if (btn) selectFrame(Number(btn.dataset.frame));
                 });
-
                 els.delayRange.addEventListener("input", () => {
                     delayMs = Number(els.delayRange.value);
                     els.delayValue.textContent = `${delayMs} ms`;
                     renderExport();
                     saveState();
-                    if (animationId !== null) {
-                        accumulatedTime = 0;
-                        lastFrameTime = 0;
-                    }
+                    if (animationId !== null) { accumulatedTime = 0; lastFrameTime = 0; }
                 });
-
-                els.playToggle.addEventListener("click", () => {
-                    animationId !== null ? stopPlayback() : startPlayback();
-                });
+                els.playToggle.addEventListener("click", () => { animationId !== null ? stopPlayback() : startPlayback(); });
                 els.prevFrame.addEventListener("click", () => selectFrame(currentFrame - 1));
                 els.nextFrame.addEventListener("click", () => selectFrame(currentFrame + 1));
                 els.addFrame.addEventListener("click", addFrame);
-                els.duplicateFrame.addEventListener("click", duplicateFrame);
+                els.duplicateFrame.addEventListener("click", duplicateFrameAction);
                 els.deleteFrame.addEventListener("click", deleteFrame);
                 els.clearFrame.addEventListener("click", clearFrame);
                 els.invertFrame.addEventListener("click", invertFrame);
@@ -1208,8 +1287,7 @@
                 els.copyCode.addEventListener("click", () => copyHeader().catch(() => setStatus("Copy failed")));
                 els.downloadCode.addEventListener("click", downloadHeader);
                 els.importButton.addEventListener("click", importHeader);
-
-                document.querySelectorAll("[data-shift]").forEach((btn) => {
+                document.querySelectorAll("[data-shift]").forEach(btn => {
                     btn.addEventListener("click", () => {
                         const [dx, dy] = btn.dataset.shift.split(",").map(Number);
                         shiftFrame(dx, dy);
@@ -1220,58 +1298,30 @@
                     const tag = document.activeElement?.tagName;
                     const isInput = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
                     if (isInput) return;
-
                     switch (e.key.toLowerCase()) {
-                        case "d":
-                            setTool("draw");
-                            break;
-                        case "e":
-                            setTool("erase");
-                            break;
-                        case "t":
-                            setTool("toggle");
-                            break;
-                        case "[":
-                            e.preventDefault();
-                            selectFrame(currentFrame - 1);
-                            break;
-                        case "]":
-                            e.preventDefault();
-                            selectFrame(currentFrame + 1);
-                            break;
-                        case " ":
-                            e.preventDefault();
-                            animationId !== null ? stopPlayback() : startPlayback();
-                            break;
-                        case "escape":
-                            stopPlayback();
-                            break;
-                        case "arrowleft":
-                            shiftFrame(-1, 0);
-                            break;
-                        case "arrowright":
-                            shiftFrame(1, 0);
-                            break;
-                        case "arrowup":
-                            shiftFrame(0, -1);
-                            break;
-                        case "arrowdown":
-                            shiftFrame(0, 1);
-                            break;
-                        default:
-                            break;
+                        case "d": setTool("draw"); break;
+                        case "e": setTool("erase"); break;
+                        case "t": setTool("toggle"); break;
+                        case "[": e.preventDefault(); selectFrame(currentFrame - 1); break;
+                        case "]": e.preventDefault(); selectFrame(currentFrame + 1); break;
+                        case "x": duplicateFrameAction(); break;
+                        case " ": e.preventDefault(); animationId !== null ? stopPlayback() : startPlayback(); break;
+                        case "escape": stopPlayback(); break;
+                        case "arrowleft": shiftFrame(-1, 0); break;
+                        case "arrowright": shiftFrame(1, 0); break;
+                        case "arrowup": shiftFrame(0, -1); break;
+                        case "arrowdown": shiftFrame(0, 1); break;
                     }
                 });
             }
 
-            // Initialize
             if (!loadState()) {
                 frames = createDefaultFrames();
                 currentFrame = 0;
                 delayMs = DEFAULT_DELAY;
             }
             bindEvents();
-            renderAll("Ready — draw on the matrix or press Play");
+            renderAll("Ready — press ? for shortcuts");
         })();
     </script>
 </body>
