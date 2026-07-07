@@ -185,6 +185,48 @@ If the ESP8266 auto-connects to an old WiFi network after flashing, old credenti
 
 Use this method only if you want to edit or rebuild the firmware yourself.
 
+### Export A `.bin` From Arduino CLI
+
+If Arduino IDE is installed, this repository can use the `arduino-cli.exe` bundled inside Arduino IDE.
+
+From the project root `F:\nounwtfmd`, compile and export the grant firmware:
+
+```powershell
+& 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe' compile --fqbn esp8266:esp8266:nodemcuv2 --export-binaries --output-dir .\nounwtfesp\nounwtfgrant\build .\nounwtfesp\nounwtfgrant
+```
+
+Copy the exported binary to the ready-to-flash repo path:
+
+```powershell
+Copy-Item -LiteralPath .\nounwtfesp\nounwtfgrant\build\nounwtfgrant.ino.bin -Destination .\nounwtfesp\nounwtfgrant\nounwtfgrant.bin -Force
+```
+
+Check the exported binary:
+
+```powershell
+Get-FileHash -Algorithm SHA256 -LiteralPath .\nounwtfesp\nounwtfgrant\nounwtfgrant.bin
+Get-ChildItem -LiteralPath .\nounwtfesp\nounwtfgrant\nounwtfgrant.bin
+```
+
+Flash the final `.bin` at address:
+
+```text
+0x00000
+```
+
+Optional cleanup:
+
+```powershell
+Remove-Item -LiteralPath .\nounwtfesp\nounwtfgrant\build -Recurse -Force
+```
+
+For the auction firmware, use the same pattern with:
+
+```powershell
+& 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe' compile --fqbn esp8266:esp8266:nodemcuv2 --export-binaries --output-dir .\nounwtfesp\nounuwtfauction\build .\nounwtfesp\nounuwtfauction
+Copy-Item -LiteralPath .\nounwtfesp\nounuwtfauction\build\nounuwtfauction.ino.bin -Destination .\nounwtfesp\nounuwtfauction\nounuwtfauction.bin -Force
+```
+
 ## 6. Install Arduino IDE
 
 1. Download and install Arduino IDE.

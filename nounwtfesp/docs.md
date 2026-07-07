@@ -141,19 +141,47 @@ The exported header is intentionally small. Each animation frame stores eight 32
 
 ## Build From Arduino CLI
 
+Run these commands from the project root:
+
+```powershell
+cd F:\nounwtfmd
+```
+
 Grant firmware:
 
 ```powershell
 & 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe' compile --fqbn esp8266:esp8266:nodemcuv2 --export-binaries --output-dir .\nounwtfesp\nounwtfgrant\build .\nounwtfesp\nounwtfgrant
+Copy-Item -LiteralPath .\nounwtfesp\nounwtfgrant\build\nounwtfgrant.ino.bin -Destination .\nounwtfesp\nounwtfgrant\nounwtfgrant.bin -Force
+Get-FileHash -Algorithm SHA256 -LiteralPath .\nounwtfesp\nounwtfgrant\nounwtfgrant.bin
 ```
 
 Auction firmware:
 
 ```powershell
 & 'C:\Program Files\Arduino IDE\resources\app\lib\backend\resources\arduino-cli.exe' compile --fqbn esp8266:esp8266:nodemcuv2 --export-binaries --output-dir .\nounwtfesp\nounuwtfauction\build .\nounwtfesp\nounuwtfauction
+Copy-Item -LiteralPath .\nounwtfesp\nounuwtfauction\build\nounuwtfauction.ino.bin -Destination .\nounwtfesp\nounuwtfauction\nounuwtfauction.bin -Force
+Get-FileHash -Algorithm SHA256 -LiteralPath .\nounwtfesp\nounuwtfauction\nounuwtfauction.bin
 ```
 
-After exporting, copy the generated `.ino.bin` file to the final `.bin` path used by this repo.
+The final `.bin` files are:
+
+```text
+nounwtfesp\nounwtfgrant\nounwtfgrant.bin
+nounwtfesp\nounuwtfauction\nounuwtfauction.bin
+```
+
+Flash either `.bin` at address:
+
+```text
+0x00000
+```
+
+Optional cleanup after exporting:
+
+```powershell
+Remove-Item -LiteralPath .\nounwtfesp\nounwtfgrant\build -Recurse -Force
+Remove-Item -LiteralPath .\nounwtfesp\nounuwtfauction\build -Recurse -Force
+```
 
 ## Notes
 
